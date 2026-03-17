@@ -1,5 +1,6 @@
 import json
 import base64
+from bs4 import BeautifulSoup 
 
 def get_notes(file_path):
     try:
@@ -71,23 +72,98 @@ def find_binary_resource(resources, url):
 
 def process_and_decode(base64_data, content_type):
     """
-    Decodes base64 data using the charset specified in the contentType.
+    Decodes Base64 and handles the content based on the contentType.
     """
     if not base64_data:
-        print("No data to decode.")
+        print("Result: No data found to decode.")
         return
 
-    # Default to utf-8, but check if charset is specified (e.g., iso8859-1)
-    encoding = 'utf-8'
-    if content_type and 'charset=' in content_type:
-        encoding = content_type.split('charset=')[-1].strip()
-
+    # 1. Always decode the Base64 layer first to get raw bytes
     try:
         decoded_bytes = base64.b64decode(base64_data)
-        decoded_text = decoded_bytes.decode(encoding)
-        print(decoded_text)
     except Exception as e:
-        print(f"Error decoding data with encoding {encoding}: {e}")
+        print(f"Error decoding Base64 string: {e}")
+        return
+
+    print(f"Resource Content-Type: {content_type}")
+
+    # 2. Logic based on Content-Type
+    try:
+        # Handle Plain Text
+        if 'text/plain' in content_type:
+            # Extract charset if present (e.g., iso8859-1), otherwise default to utf-8
+            encoding = 'utf-8'
+            if 'charset=' in content_type:
+                encoding = content_type.split('charset=')[-1].strip()
+            
+            decoded_text = decoded_bytes.decode(encoding)
+            print("--- Decoded Plain Text ---")
+            print(decoded_text)
+
+        # Handle XML
+        elif 'application/xml' in content_type or 'text/xml' in content_type:
+            # XML is usually UTF-8, but let's try to decode it safely
+            # decoded_xml = decoded_bytes.decode('utf-8')
+            pure_text = extract_text_from_xml(decoded_bytes)
+            print("--- Decoded XML Content ---")
+            print(pure_text)
+
+        # Handle other types (PDF, Images, etc.)
+        else:
+            print(f"--- Raw Data (Type: {content_type}) ---")
+            # For non-text types, we usually don't print the whole thing to console
+            print(f"Binary data received ({len(decoded_bytes)} bytes). Preview of first 50 bytes:")
+            print(decoded_bytes[:50])
+
+    except UnicodeDecodeError:
+        print("Error: Could not decode bytes into text. The data might be a non-text format (like PDF or Image).")
+    except Exception as e:
+        print(f"Error during processing: {e}")
+
+    print("-" * 40)
+
+def extract_text_from_xml(xml_content):
+    """
+    Parses XML and returns human-readable text.
+    Targeting titles, tables, and paragraphs.
+    """
+    try:
+        # Use lxml-xml to handle the medical namespaces properly
+        soup = BeautifulSoup(xml_content, 'xml')
+
+        # 1. Clean up: Remove metadata tags that aren't useful in a text note
+        for tag in soup(['templateId', 'id', 'code', 'effectiveTime', 'realmCode', 'typeId', 'confidentialityCode']):
+            tag.decompose()
+
+        # 2. Extract Text with formatting logic
+        # We use a separator to ensure words from different tags don't mash together
+        # (e.g., <td>Date</td><td>Problem</td> -> "Date Problem" instead of "DateProblem")
+        text = soup.get_text(separator=' ', strip=True)
+
+        # 3. Optional: More refined extraction (focus on Sections)
+        # If the output is too noisy, you can target specific content:
+        sections = []
+        for section in soup.find_all('section'):
+            title = section.find('title')
+            content = section.find('text')
+            if title:
+                sections.append(f"\n--- {title.get_text().upper()} ---")
+            if content:
+                # Replace table tags with newlines to keep rows separate
+                for tr in content.find_all('tr'):
+                    tr.insert_after(soup.new_string('\n'))
+                for td in content.find_all('td'):
+                    td.insert_after(soup.new_string('  |  '))
+                
+                sections.append(content.get_text(strip=False))
+        
+        if sections:
+            return "\n".join(sections)
+        
+        return text # Fallback to general text extraction
+
+    except Exception as e:
+        return f"Error parsing XML text: {e}"
 
 if __name__ == "__main__":
     file = 'new_data.json' 
