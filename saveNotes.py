@@ -19,8 +19,14 @@ def get_notes(file_path):
         if item.get('resourceType') == 'DocumentReference':
             found_doc = True
             doc_id = item.get('id', 'Unknown ID')
-            print(f"\n[Document ID: {doc_id}]")
+            # print(f"\n[Document ID: {doc_id}]")
             
+            type=item.get('type', {})
+            coding=type.get('coding', [])
+            if coding:
+                code=coding[0].get('code')
+                print(f"Document Type Code: {code}")
+
             contents = item.get('content', [])
             for i, content_item in enumerate(contents):
                 attachment = content_item.get('attachment', {})
@@ -30,23 +36,25 @@ def get_notes(file_path):
                 # CASE A: Data is directly inside the DocumentReference
                 if base64_data:
                     print(f"--- Decoded Note (Inline) ---")
-                    process_and_decode(base64_data, attachment.get('contentType', 'utf-8'))
+                    data=process_and_decode(base64_data, attachment.get('contentType', 'utf-8'))
 
                 # CASE B: Only a URL is present, look for the matching Binary resource in the same file
                 elif attachment_url:
                     print(f"Searching for Binary resource matching URL: {attachment_url}")
-                    url=f"https://fhir.careevolution.com/Master.Adapter1.WebClient/api/fhir-r4/{attachment_url}"  # Ensure URL is in the correct format for searching
+                    url=f"https://fhir.careevolution.com/Master.Adapter1.WebClient/api/fhir-r4/{attachment_url}"  
+                    # Ensure URL is in the correct format for searching
                     binary_resource = find_binary_resource(resources, url)
                     
                     if binary_resource:
                         # print(f"--- Decoded Note (From Binary Resource: {binary_resource.get('id')}) ---")
-                        process_and_decode(binary_resource.get('data'), binary_resource.get('contentType'))
+                        data=process_and_decode(binary_resource.get('data'), binary_resource.get('contentType'))
                     else:
                         print(f"Could not find a matching Binary resource in the file for URL: {attachment_url}")
 
                 else:
                     print(f"No data or URL found in attachment {i+1} for Document {doc_id}")
-    
+
+            save_decoded_note_to_file(data, doc_id, attachment.get('contentType', 'unknown'), code) 
     if not found_doc:
         print("No DocumentReference resources found.")
 
@@ -55,8 +63,6 @@ def find_binary_resource(resources, url):
     Searches the list of resources for a Binary resource that matches the provided URL.
     Checks both the 'id' (extracted from URL) and 'meta.source'.
     """
-    # Standard FHIR URLs often look like "Binary/ID_VALUE"
-    # We extract the ID part just in case
     target_id = url.split('/')[-1] 
 
     for item in resources:
@@ -85,7 +91,7 @@ def process_and_decode(base64_data, content_type):
         print(f"Error decoding Base64 string: {e}")
         return
 
-    print(f"Resource Content-Type: {content_type}")
+    # print(f"Resource Content-Type: {content_type}")
 
     # 2. Logic based on Content-Type
     try:
@@ -98,7 +104,8 @@ def process_and_decode(base64_data, content_type):
             
             decoded_text = decoded_bytes.decode(encoding)
             print("--- Decoded Plain Text ---")
-            print(decoded_text)
+            # print(decoded_text)
+            return decoded_text
 
         # Handle XML
         elif 'application/xml' in content_type or 'text/xml' in content_type:
@@ -106,14 +113,16 @@ def process_and_decode(base64_data, content_type):
             # decoded_xml = decoded_bytes.decode('utf-8')
             pure_text = extract_text_from_xml(decoded_bytes)
             print("--- Decoded XML Content ---")
-            print(pure_text)
+            # print(pure_text)
+            return pure_text
 
         # Handle other types (PDF, Images, etc.)
         else:
             print(f"--- Raw Data (Type: {content_type}) ---")
             # For non-text types, we usually don't print the whole thing to console
-            print(f"Binary data received ({len(decoded_bytes)} bytes). Preview of first 50 bytes:")
-            print(decoded_bytes[:50])
+            print(f"Binary data received ({len(decoded_bytes)} bytes). Preview of first 100 bytes:")
+            # print(decoded_bytes[:100])
+            return decoded_bytes.decode('latin-1')  # Return raw bytes as text for reference
 
     except UnicodeDecodeError:
         print("Error: Could not decode bytes into text. The data might be a non-text format (like PDF or Image).")
@@ -121,6 +130,28 @@ def process_and_decode(base64_data, content_type):
         print(f"Error during processing: {e}")
 
     print("-" * 40)
+
+def save_decoded_note_to_file(decoded_text, doc_id, content_type, code):
+    """
+    Saves the decoded text to a file named after the document ID and content type.
+    """
+    # Sanitize content type for filename (e.g., text/plain -> text_plain)
+    safe_content_type = content_type.replace('/', '_').replace(' ', '_')
+    filename = f"{doc_id}_{safe_content_type}.txt"
+    
+    #choose folder based on code if cda it should be inside cda_data else in the data folder at root
+    # the cda_data and data folders are already created in the root of the project
+    if code and 'cda' in code.lower():
+        filename = f"cda_data/{filename}"
+    else:
+        filename = f"data/{filename}"
+
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            f.write(decoded_text)
+        print(f"Decoded note saved to {filename}")
+    except Exception as e:
+        print(f"Error saving decoded note to file: {e}")
 
 def extract_text_from_xml(xml_content):
     """

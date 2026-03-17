@@ -9,6 +9,8 @@ env/
 ENV/
 .venv*/
 .env/
+cda_data*/
+data*/
 
 # Environment variable files
 .env
