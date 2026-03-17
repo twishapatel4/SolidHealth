@@ -19,13 +19,11 @@ def get_notes(file_path):
         if item.get('resourceType') == 'DocumentReference':
             found_doc = True
             doc_id = item.get('id', 'Unknown ID')
-            # print(f"\n[Document ID: {doc_id}]")
             
             type=item.get('type', {})
             coding=type.get('coding', [])
             if coding:
                 code=coding[0].get('code')
-                print(f"Document Type Code: {code}")
 
             contents = item.get('content', [])
             for i, content_item in enumerate(contents):
@@ -40,13 +38,11 @@ def get_notes(file_path):
 
                 # CASE B: Only a URL is present, look for the matching Binary resource in the same file
                 elif attachment_url:
-                    print(f"Searching for Binary resource matching URL: {attachment_url}")
                     url=f"https://fhir.careevolution.com/Master.Adapter1.WebClient/api/fhir-r4/{attachment_url}"  
                     # Ensure URL is in the correct format for searching
                     binary_resource = find_binary_resource(resources, url)
                     
                     if binary_resource:
-                        # print(f"--- Decoded Note (From Binary Resource: {binary_resource.get('id')}) ---")
                         data=process_and_decode(binary_resource.get('data'), binary_resource.get('contentType'))
                     else:
                         print(f"Could not find a matching Binary resource in the file for URL: {attachment_url}")
@@ -72,7 +68,6 @@ def find_binary_resource(resources, url):
             item_source = item.get('meta', {}).get('source', '')
             
             if item_id == target_id or item_source == url:
-                # print(f"")
                 return item
     return None
 
@@ -91,8 +86,6 @@ def process_and_decode(base64_data, content_type):
         print(f"Error decoding Base64 string: {e}")
         return
 
-    # print(f"Resource Content-Type: {content_type}")
-
     # 2. Logic based on Content-Type
     try:
         # Handle Plain Text
@@ -103,8 +96,6 @@ def process_and_decode(base64_data, content_type):
                 encoding = content_type.split('charset=')[-1].strip()
             
             decoded_text = decoded_bytes.decode(encoding)
-            print("--- Decoded Plain Text ---")
-            # print(decoded_text)
             return decoded_text
 
         # Handle XML
@@ -112,16 +103,12 @@ def process_and_decode(base64_data, content_type):
             # XML is usually UTF-8, but let's try to decode it safely
             # decoded_xml = decoded_bytes.decode('utf-8')
             pure_text = extract_text_from_xml(decoded_bytes)
-            print("--- Decoded XML Content ---")
-            # print(pure_text)
             return pure_text
 
         # Handle other types (PDF, Images, etc.)
         else:
             print(f"--- Raw Data (Type: {content_type}) ---")
             # For non-text types, we usually don't print the whole thing to console
-            print(f"Binary data received ({len(decoded_bytes)} bytes). Preview of first 100 bytes:")
-            # print(decoded_bytes[:100])
             return decoded_bytes.decode('latin-1')  # Return raw bytes as text for reference
 
     except UnicodeDecodeError:
