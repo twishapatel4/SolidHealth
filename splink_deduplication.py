@@ -1,179 +1,211 @@
 import json
 import pandas as pd
 import networkx as nx
-# from splink.duckdb.linker import DuckDBLinker
-# import splink.duckdb.comparison_library as cl
 from splink import Linker, DuckDBAPI
-import splink.comparison_library as cl
 from uuid import uuid4
+import sys
 
-# --- STAGE 1: FEATURE EXTRACTION & NORMALIZATION ---
+# --- UTILS ---
+def clean_id(raw_id):
+    if raw_id is None or pd.isna(raw_id) or str(raw_id).lower() == 'nan' or str(raw_id).strip() == "":
+        return "MISSING"
+    return str(raw_id).split('/')[-1].strip()
+
+def get_val(obj, path, default="N/A"):
+    """Safely extract nested values from FHIR dicts."""
+    components = path.split('.')
+    for part in components:
+        if isinstance(obj, dict):
+            obj = obj.get(part)
+        elif isinstance(obj, list) and part.isdigit():
+            try: obj = obj[int(part)]
+            except: return default
+        else:
+            return default
+    return str(obj) if obj is not None else default
+
+# --- STAGE 1: FEATURE EXTRACTION (Using your specific Identifiers) ---
 def extract_features(data, source_name):
-    """Flattens FHIR JSON into a list of dictionaries with normalized keys."""
     rows = []
     for item in data:
         res_type = item.get('resourceType')
+        if res_type == "Provenance": continue
+
+        internal_id = clean_id(item.get('id'))
+        # Determine Patient Reference
+        raw_ref = (item.get('subject', {}).get('reference') or 
+                   item.get('patient', {}).get('reference') or 
+                   item.get('subject', {}).get('display') or "")
+        patient_ref = clean_id(raw_ref)
+        
+        # Base clinical data
         base = {
-            "internal_id": item.get('id'),
+            "linkage_id": f"{source_name}_{internal_id}",
+            "internal_id": internal_id,
             "source": source_name,
-            "resourceType": res_type
+            "resourceType": res_type,
+            "patient_ref": patient_ref,
+            "payload": "",
+            "unique_key": "" # This will hold our specific identifiers
         }
 
-        if res_type == "Patient":
-            base.update({
-                "name": (item.get('name', [{}])[0].get('family', '') + " " + 
-                         "".join(item.get('name', [{}])[0].get('given', []))).upper().strip(),
-                "dob": item.get('birthDate', ''),
-                "gender": item.get('gender', ''),
-                "zip": item.get('address', [{}])[0].get('postalCode', '')
-            })
+        # --- RESOURCE SPECIFIC LOGIC BASED ON YOUR LIST ---
         
+        if res_type == "Patient":
+            name = get_val(item, "name.0.family") + " " + get_val(item, "name.0.given.0")
+            base["unique_key"] = f"{name}|{get_val(item, 'birthDate')}|{get_val(item, 'gender')}"
+            base["payload"] = get_val(item, "address.0.postalCode")
+
+        elif res_type == "AllergyIntolerance":
+            base["unique_key"] = f"{get_val(item, 'code.coding.0.code')}|{get_val(item, 'recordedDate')[:10]}"
+            base["payload"] = get_val(item, "clinicalStatus.coding.0.code")
+
         elif res_type == "Observation":
-            # Semantic Link: Patient + Code + Date
-            base.update({
-                "patient_ref": item.get('subject', {}).get('reference'),
-                "code": item.get('code', {}).get('coding', [{}])[0].get('code'),
-                "date": item.get('effectiveDateTime', '')[:10], # Truncate to Date
-                "value": str(item.get('valueQuantity', {}).get('value', ''))
-            })
+            base["unique_key"] = f"{get_val(item, 'code.coding.0.code')}|{get_val(item, 'effectiveDateTime')}"
+            base["payload"] = get_val(item, "valueQuantity.value") or get_val(item, "valueString")
 
         elif res_type == "Condition":
-            # Semantic Link: Patient + SNOMED/ICD Code
-            base.update({
-                "patient_ref": item.get('subject', {}).get('reference'),
-                "code": item.get('code', {}).get('coding', [{}])[0].get('code'),
-                "category": item.get('category', [{}])[0].get('coding', [{}])[0].get('code')
-            })
+            # Uses Snomed/ICD10 and period/recordedDate
+            date = (item.get('recordedDate') or item.get('onsetDateTime') or "N/A")[:10]
+            base["unique_key"] = f"{get_val(item, 'code.coding.0.code')}|{date}"
+            base["payload"] = get_val(item, "clinicalStatus.coding.0.code")
 
         elif res_type == "MedicationRequest":
-            base.update({
-                "patient_ref": item.get('subject', {}).get('reference'),
-                "rxnorm": item.get('medicationCodeableConcept', {}).get('coding', [{}])[0].get('code'),
-                "date": item.get('authoredOn', '')[:10]
-            })
+            # Check for CodeableConcept OR Reference
+            m_code = get_val(item, "medicationCodeableConcept.coding.0.code")
+            if m_code == "N/A": m_code = clean_id(get_val(item, "medicationReference.reference"))
+            base["unique_key"] = f"{m_code}|{get_val(item, 'authoredOn')[:10]}"
+            base["payload"] = get_val(item, "status")
 
-        # Add more logic for Procedure, Immunization etc. based on your list
+        elif res_type == "DiagnosticReport":
+            base["unique_key"] = f"{get_val(item, 'performer.0.reference')}|{get_val(item, 'issued')}|{get_val(item, 'encounter.reference')}"
+            base["payload"] = get_val(item, "status")
+
+        elif res_type == "Procedure":
+            base["unique_key"] = f"{get_val(item, 'performedDateTime')}|{get_val(item, 'location.reference')}|{get_val(item, 'encounter.reference')}"
+            base["payload"] = get_val(item, "status")
+
+        elif res_type == "Immunization":
+            base["unique_key"] = f"{get_val(item, 'vaccineCode.coding.0.code')}|{get_val(item, 'occurrenceDateTime')[:10]}"
+            base["payload"] = get_val(item, "status")
+
+        elif res_type == "Encounter":
+            base["unique_key"] = f"{get_val(item, 'serviceProvider.reference')}|{get_val(item, 'location.0.location.reference')}"
+            base["payload"] = get_val(item, "period.start", "N/A")
+
+        elif res_type == "DocumentReference":
+            base["unique_key"] = f"{get_val(item, 'date')}|{get_val(item, 'type.coding.0.code')}|{get_val(item, 'author.0.reference')}"
+            base["payload"] = get_val(item, "status")
+
+        elif res_type == "CarePlan":
+            base["unique_key"] = f"{get_val(item, 'created')}|{get_val(item, 'author.identifier.value')}"
+            base["payload"] = get_val(item, "status")
+            
+        elif res_type == "MedicationDispense":
+            base["unique_key"] = f"{get_val(item, 'authorizingPrescription.0.reference')}|{get_val(item, 'whenHandedOver')}"
+            base["payload"] = get_val(item, "status")
+
+        # Default fallback for types not explicitly parsed (Goal, CareTeam, Location, etc.)
+        if not base["unique_key"]:
+            base["unique_key"] = f"ID-{internal_id}"
+            base["payload"] = "Raw Resource"
+
         rows.append(base)
     return rows
 
-# --- STAGE 2: PROBABILISTIC PATIENT MATCHING (SPLINK) ---
+# --- STAGE 2: IDENTITY RESOLUTION (Splink) ---
 def get_patient_matches(df_patients):
-    """Uses Fellegi-Sunter via Splink to find duplicate patients."""
-    
+    if len(df_patients) < 2: return pd.DataFrame()
+    # Logic remains same as previous (probabilistic DOB/Name match)
     settings = {
         "link_type": "dedupe_only",
+        "unique_id_column_name": "linkage_id",
         "comparisons": [
-            cl.ExactMatch("dob"),
-            cl.LevenshteinAtThresholds("name", 2),
-            cl.ExactMatch("gender"),
-            cl.ExactMatch("zip"),
+            {"output_column_name": "unique_key", "comparison_levels": [
+                {"sql_condition": "unique_key_l IS NULL OR unique_key_r IS NULL", "is_null_level": True},
+                {"sql_condition": "unique_key_l = unique_key_r", "m_probability": 0.99, "u_probability": 0.0001},
+                {"sql_condition": "ELSE", "m_probability": 0.01, "u_probability": 0.9999}
+            ]}
         ],
-        "blocking_rules_to_generate_predictions": [
-            "l.dob = r.dob",
-            "l.name = r.name"
-        ],
-        "retain_matching_columns": True,
-        "retain_intermediate_calculation_columns": False
+        "blocking_rules_to_generate_predictions": []
     }
-
-    # linker = DuckDBAPI(df_patients, settings)
-    # # In production, you would 'train' these weights. For now, we estimate.
-    # linker.estimate_u_using_random_sampling(max_pairs=1e6)
-    
-    # # Calculate matches with high confidence (Probability > 0.90)
-    # df_matches = linker.predict(threshold_match_probability=0.90).as_pandas_dataframe()
     db_api = DuckDBAPI()
-
-    # 2. Initialize the Linker (Data + Settings + API)
-    # df_patients is the pandas dataframe
     linker = Linker(df_patients, settings, db_api)
-    
-    # 3. Estimate weights (Using the v4 'training' namespace)
-    linker.training.estimate_u_using_random_sampling(max_pairs=1e6)
-    
-    # 4. Predict (Using the v4 'inference' namespace)
-    # .as_pandas_dataframe() is still used to convert the result
-    df_matches = linker.inference.predict(threshold_match_probability=0.90).as_pandas_dataframe()
-    return df_matches
+    return linker.inference.predict(threshold_match_probability=0.90).as_pandas_dataframe()
 
-# --- STAGE 3: GRAPH CLUSTERING (NETWORKX) ---
-def create_global_ids(df_patients, df_matches):
-    """Uses Graph Theory to group all related Patient IDs into one Global UUID."""
+def create_global_id_map(df_patients, df_matches):
     G = nx.Graph()
+    link_to_internal = dict(zip(df_patients['linkage_id'], df_patients['internal_id']))
+    for lid in df_patients['linkage_id']: G.add_node(lid)
+    if not df_matches.empty:
+        for _, row in df_matches.iterrows():
+            G.add_edge(row['linkage_id_l'], row['linkage_id_r'])
     
-    # Add all unique internal IDs as nodes
-    for _, row in df_patients.iterrows():
-        G.add_node(row['internal_id'])
-        
-    # Add edges for matches found by Splink
-    for _, row in df_matches.iterrows():
-        G.add_edge(row['internal_id_l'], row['internal_id_r'])
-        
-    # Find clusters (Connected Components)
     global_id_map = {}
     for cluster in nx.connected_components(G):
-        unique_id = f"GLOBAL-PATIENT-{str(uuid4())[:8]}"
-        for internal_id in cluster:
-            global_id_map[internal_id] = unique_id
-            
+        unique_global_id = f"GLOBAL-{str(uuid4())[:8]}"
+        for lid in cluster:
+            global_id_map[link_to_internal[lid]] = unique_global_id
     return global_id_map
 
-# --- MAIN EXECUTION PIPELINE ---
+# --- STAGE 3: EXECUTION ---
 def main(file1, file2):
-    # 1. Load and Flatten
-    raw_data1 = json.load(open(file1))
-    raw_data2 = json.load(open(file2))
+    print("🚀 Starting Refined Identity & Clinical Audit...")
     
-    df_all = pd.DataFrame(extract_features(raw_data1, "file1") + extract_features(raw_data2, "file2"))
-    
-    # 2. Separate Patients for Splink
-    df_patients = df_all[df_all['resourceType'] == 'Patient'].copy()
-    df_patients['unique_id'] = range(len(df_patients)) # Splink needs a numeric unique row ID
-    
-    # 3. Probabilistic Linkage
-    print("Running Probabilistic Matching...")
-    patient_matches = get_patient_matches(df_patients)
-    
-    # 4. Generate Global IDs
-    print("Generating Global Identity Graph...")
-    global_id_map = create_global_ids(df_patients, patient_matches)
-    
-    # 5. Apply Global IDs to Clinical Data
-    # Map the local Patient References (e.g. 'Patient/123') to Global IDs
-    df_clinical = df_all[df_all['resourceType'] != 'Patient'].copy()
-    
-    def resolve_patient(ref):
-        # clean_ref = str(ref).replace('Patient/', '')
-        # In your extract_features loop:
-        if not ref or str(ref) == 'nan':
-            return "ORPHAN-RECORD"
+    df1 = pd.DataFrame(extract_features(json.load(open(file1)), "file1"))
+    df2 = pd.DataFrame(extract_features(json.load(open(file2)), "file2"))
+
+    # 1. Identity Resolution
+    df_pats = pd.concat([df1[df1['resourceType']=='Patient'], df2[df2['resourceType']=='Patient']])
+    patient_matches = get_patient_matches(df_pats)
+    global_id_map = create_global_id_map(df_pats, patient_matches)
+
+    def attach_keys(df):
+        # Map patient_ref to the Global Identity
+        df['global_id'] = df['patient_ref'].apply(lambda x: global_id_map.get(x, f"UNMAPPED-{x}"))
+        # Create final Fingerprint: GlobalID + Type + ResourceSpecificIdentifiers
+        df['fingerprint'] = df['global_id'] + "|" + df['resourceType'] + "|" + df['unique_key']
+        return df.drop_duplicates(subset=['fingerprint']).set_index('fingerprint')
+
+    idx1 = attach_keys(df1)
+    idx2 = attach_keys(df2)
+
+    # 2. Diffing
+    all_fps = set(idx1.index) | set(idx2.index)
+    changes = []
+
+    for fp in all_fps:
+        if "UNMAPPED" in fp and idx1.loc[idx1.index == fp, 'resourceType'].iloc[0] != "Patient":
+            continue # Skip records that aren't linked to a verified patient
+            
+        in_1, in_2 = fp in idx1.index, fp in idx2.index
+
+        if in_1 and not in_2:
+            changes.append({"Status": "REMOVED", "Event": fp})
+        elif in_2 and not in_1:
+            changes.append({"Status": "ADDED", "Event": fp, "Payload": idx2.loc[fp, 'payload']})
+        else:
+            v1, v2 = str(idx1.loc[fp, 'payload']), str(idx2.loc[fp, 'payload'])
+            if v1 != v2:
+                changes.append({"Status": "MODIFIED", "Event": fp, "Detail": f"{v1} ➔ {v2}"})
+            else:
+                changes.append({"Status": "UNCHANGED", "Event": fp})
+
+    # 3. Report
+    report = pd.DataFrame(changes)
+    print("\n" + "="*80 + "\nAUDIT SUMMARY\n" + "="*80)
+    if not report.empty:
+        print(report['Status'].value_counts().to_string())
         
-        # 'ref' is the value from the 'patient_ref' column (e.g., "Patient/123")
-        # Split by '/' and take the last part (the actual ID)
-        clean_patient_id = str(ref).split('/')[-1]
-        return global_id_map.get(clean_patient_id, "ORPHAN-RECORD")
-
-    df_clinical['global_patient_id'] = df_clinical['patient_ref'].apply(resolve_patient)
-
-    # 6. Final Deduplication (Semantic Fingerprinting)
-    # Group by Patient + Type + Code + Date to find clinical duplicates
-    df_clinical['fingerprint'] = df_clinical.apply(
-        lambda x: f"{x['global_patient_id']}|{x['resourceType']}|{x.get('code', 'N/A')}|{x.get('date', 'N/A')}|{x.get('value', 'N/A')}", 
-        axis=1
-    )
-
-    duplicates = df_clinical[df_clinical.duplicated('fingerprint', keep=False)]
-    
-    print(f"\n--- DEDUPLICATION RESULTS ---")
-    print(f"Total Patient Records: {len(df_patients)}")
-    print(f"Unique Global Patients Found: {len(set(global_id_map.values()))}")
-    print(f"Duplicate Clinical Records Found: {len(duplicates)}")
-    
-    # Output Example:
-    if not duplicates.empty:
-        print("\nSample Duplicates (Same event, different IDs):")
-        print(duplicates[['internal_id', 'source', 'resourceType', 'fingerprint']].head(10))
+        for status in ["MODIFIED", "ADDED", "REMOVED"]:
+            subset = report[report['Status'] == status]
+            if not subset.empty:
+                print(f"\n--- {status} ---")
+                for _, r in subset.iterrows():
+                    print(f" • {r['Event']}")
+                    if status == "MODIFIED": print(f"   Change: {r['Detail']}")
+    else:
+        print("No clinical data matched.")
 
 if __name__ == "__main__":
-    main('user_36ry42FouyaK8HbVxGcqZKAPqLR_20260310T110622.json', 
-         'new_data.json')
+    main('elijah.json', 'elijah_2.json')

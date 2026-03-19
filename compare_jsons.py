@@ -73,6 +73,6 @@ def compare_jsons(file1, file2):
     print(f"\nUnique patient IDs: {patient_ids}")
 
 if __name__ == "__main__":
-    file1 = 'user_36ry42FouyaK8HbVxGcqZKAPqLR_20260310T110622.json'
-    file2 = 'user_36ry42FouyaK8HbVxGcqZKAPqLR_20260310T111415.json'
+    file1 = 'elijah.json'
+    file2 = 'elijah_2.json'
     compare_jsons(file1, file2)
