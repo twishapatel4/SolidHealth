@@ -70,9 +70,12 @@ def extract_features(data, source_name):
         elif res_type == "Observation":
             # Business Key: LOINC + DateTime + (Optional: normalized Method)
             code = get_val(item, 'code.coding.0.code')
-            date = get_val(item, 'effectiveDateTime')
-            base["unique_key"] = f"{code}|{date}"
-            base["payload"] = get_val(item, "valueQuantity.value")
+            # date = get_val(item, 'effectiveDateTime')
+            # base["unique_key"] = f"{code}|{date}"
+
+            timestamp = get_val(item, 'effectiveDateTime') 
+            base["unique_key"] = f"{code}|{timestamp}"
+            base["payload"] = str(get_val(item, "valueQuantity.value"))
 
         elif res_type == "Condition":
             # Business Key: Code + Recorded Date (ignore Platform ID)
@@ -172,7 +175,8 @@ def main(file1, file2):
         df['global_id'] = df['patient_ref'].apply(lambda x: global_id_map.get(x, "UNKNOWN"))
         # Fingerprint is: Global Identity + Resource Type + Business Logic Key
         df['fingerprint'] = df['global_id'] + "|" + df['resourceType'] + "|" + df['unique_key']
-        return df.drop_duplicates(subset=['fingerprint']).set_index('fingerprint')
+        return df.drop_duplicates(subset=['fingerprint','payload']).set_index('fingerprint')
+        # return df.set_index('fingerprint')
 
     idx1 = attach_keys(df1)
     idx2 = attach_keys(df2)
@@ -182,15 +186,32 @@ def main(file1, file2):
 
     for fp in all_fps:
         # Ignore items not linked to a patient for this specific audit
-        if "UNKNOWN" in fp: continue
+        if "UNKNOWN" in fp and "Patient" not in fp: continue
         
         in_1, in_2 = fp in idx1.index, fp in idx2.index
 
+        # if in_1 and in_2:
+        #     v1, v2 = str(idx1.loc[fp, 'payload']), str(idx2.loc[fp, 'payload'])
+        #     print(v1, v2)
+        #     if v1 != v2:
+        #         changes.append({"Status": "MODIFIED", "Event": fp, "Detail": f"{v1} ➔ {v2}"})
+        #     else:
+        #         changes.append({"Status": "UNCHANGED", "Event": fp})
         if in_1 and in_2:
-            v1, v2 = str(idx1.loc[fp, 'payload']), str(idx2.loc[fp, 'payload'])
-            print(v1, v2)
-            if v1 != v2:
-                changes.append({"Status": "MODIFIED", "Event": fp, "Detail": f"{v1} ➔ {v2}"})
+            # FIX: Get values as a list, even if there is only one.
+            # This prevents the "Name: payload, dtype: str" mess.
+            v1_raw = idx1.loc[[fp], 'payload'].unique().tolist()
+            v2_raw = idx2.loc[[fp], 'payload'].unique().tolist()
+            
+            # Sort them so comparison is consistent
+            v1_raw.sort()
+            v2_raw.sort()
+
+            if v1_raw != v2_raw:
+                # Join with commas for a clean printout
+                s1 = ", ".join(map(str, v1_raw))
+                s2 = ", ".join(map(str, v2_raw))
+                changes.append({"Status": "MODIFIED", "Event": fp, "Detail": f"{s1} ➔ {s2}"})
             else:
                 changes.append({"Status": "UNCHANGED", "Event": fp})
         elif in_1:
@@ -204,19 +225,19 @@ def main(file1, file2):
         print(report['Status'].value_counts().to_string())
         # Show a few Unchanged to prove it worked
         unchanged = report[report['Status'] == "UNCHANGED"]
-        if not unchanged.empty:
-            for status in ["MODIFIED", "ADDED", "REMOVED"]:
-                subset = report[report['Status'] == status]
+        # if not unchanged.empty:
+        for status in ["MODIFIED", "ADDED", "REMOVED"]:
+            subset = report[report['Status'] == status]
                 # print(subset)
-                if not subset.empty:
+            if not subset.empty:
                     print(f"\n--- {status} ---")
                     for _, r in subset.iterrows():
                         print(f" • {r['Event']}")
                         if status == "MODIFIED": 
-                            print(f"   Change: {r['Detail']}")
-            print(f"\n✅ Successfully Matched {len(unchanged)} records across platforms (IDs differed, but clinical data was identical)")
+                            print(f"   Change: {r['Detail']}")    
+        print(f"\n✅ Successfully Matched {len(unchanged)} records across platforms (IDs differed, but clinical data was identical)")
     else:
         print("No clinical data matched.")
 
 if __name__ == "__main__":
-    main('elijah.json', 'cigna_synthetic.json')
+    main('elijah_2.json', 'cigna_synthetic.json')

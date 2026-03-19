@@ -14240,6 +14240,54 @@
       "unit": "mmHg"
     }
   },
+   {
+    "category": [
+      {
+        "coding": [
+          {
+            "code": "laboratory",
+            "display": "Laboratory",
+            "system": "http://terminology.hl7.org/CodeSystem/observation-category"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "code": "2093-3",
+          "display": "Total Cholesterol",
+          "system": "http://loinc.org"
+        }
+      ]
+    },
+    "effectiveDateTime": "2019-07-11T01:00:00-04:00",
+    "id": "f19a347f-1c4f-2e42-344e-e422eaf65c68",
+    "identifier": [
+      {
+        "system": "https://sources.aetna.com/observation/identifier/memberobsid/50085",
+        "value": "MN03200000000A3"
+      }
+    ],
+    "meta": {
+      "lastUpdated": "2022-08-30T16:47:14.281661+00:00",
+      "profile": [
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab"
+      ],
+      "versionId": "MTY2MTg3ODAzNDI4MTY2MTAwMA"
+    },
+    "resourceType": "Observation",
+    "status": "final",
+    "subject": {
+      "reference": "Patient/2e897e49-61e0-4449-b470-c9909dc3ec1c"
+    },
+    "valueQuantity": {
+      "code": "mg/dL",
+      "system": "http://unitsofmeasure.org",
+      "unit": "mg/dL",
+      "value": 178
+    }
+  },
   {
     "resourceType": "Observation",
     "id": "031d062f-a3a3-4c81-ad1f-d96e891a5147",
