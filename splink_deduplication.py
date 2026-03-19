@@ -2,8 +2,9 @@ import json
 import pandas as pd
 import networkx as nx
 from splink import Linker, DuckDBAPI
-from uuid import uuid4
+import hashlib
 import re
+from collections import Counter
 
 # --- UTILS ---
 def normalize_string(s):
@@ -11,11 +12,10 @@ def normalize_string(s):
     return re.sub(r'[^a-z0-9]', '', str(s).lower())
 
 def clean_id(raw_id):
-    if raw_id is None or pd.isna(raw_id) or str(raw_id).lower() == 'nan' or str(raw_id).strip() == "":
-        return "MISSING"
+    if raw_id is None or pd.isna(raw_id): return "MISSING"
     return str(raw_id).split('/')[-1].strip()
 
-def get_val(obj, path, default="N/A"):
+def get_val(obj, path, default=None):
     components = path.split('.')
     for part in components:
         if isinstance(obj, dict):
@@ -25,219 +25,174 @@ def get_val(obj, path, default="N/A"):
             except: return default
         else:
             return default
-    return str(obj) if obj is not None else default
+    return obj if obj is not None else default
 
-# --- STAGE 1: BUSINESS-ORIENTED FEATURE EXTRACTION ---
+# --- CLINICAL HASHING ---
+def get_clinical_essence(obj):
+    """Recursively removes technical noise."""
+    noise = {
+        'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
+        'url', 'system', 'fullUrl', 'identifier' 
+    }
+    
+    if isinstance(obj, dict):
+        cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
+        return {k: v for k, v in cleaned.items() if v not in [None, "", [], {}]}
+    elif isinstance(obj, list):
+        return sorted([get_clinical_essence(x) for x in obj], key=lambda x: str(x))
+    elif isinstance(obj, (int, float)):
+        return float(obj)
+    elif isinstance(obj, str):
+        return obj.strip().lower()
+    return obj
+
+def generate_clinical_hash(obj):
+    essence = get_clinical_essence(obj)
+    serialized = json.dumps(essence, sort_keys=True).encode('utf-8')
+    return hashlib.sha256(serialized).hexdigest()
+
+def deep_diff(d1, d2, path=""):
+    if not isinstance(d1, dict) or not isinstance(d2, dict):
+        return f"{d1} ➔ {d2}"
+    differences = []
+    keys = set(d1.keys()) | set(d2.keys())
+    for k in keys:
+        v1, v2 = d1.get(k), d2.get(k)
+        if v1 != v2:
+            if isinstance(v1, dict) and isinstance(v2, dict):
+                sub = deep_diff(v1, v2, f"{path}{k}.")
+                if sub: differences.append(sub)
+            else:
+                differences.append(f"{path}{k}: {v1} ➔ {v2}")
+    return ", ".join(differences)
+
+# --- FEATURE EXTRACTION ---
 def extract_features(data, source_name):
     rows = []
+    file_stats = Counter()
+    instance_tracker = Counter()
+
     for item in data:
         res_type = item.get('resourceType')
         if res_type == "Provenance": continue
-
+        
+        file_stats[res_type] += 1
         internal_id = clean_id(item.get('id'))
-        # Try to find a logical patient reference
         raw_ref = (item.get('subject', {}).get('reference') or 
                    item.get('patient', {}).get('reference') or 
                    item.get('subject', {}).get('display') or "")
         patient_ref = clean_id(raw_ref)
         
-        base = {
+        # Identity Logic: Find Code
+        code = (get_val(item, "code.coding.0.code") or 
+                get_val(item, "vaccineCode.coding.0.code") or 
+                get_val(item, "type.0.coding.0.code") or 
+                get_val(item, "type.coding.0.code") or 
+                get_val(item, "class.code") or 
+                get_val(item, "medicationCodeableConcept.coding.0.code") or "NOCODE")
+        
+        # Identity Logic: Find Date (Added performedDateTime and Period)
+        date_raw = (get_val(item, "effectiveDateTime") or 
+                    get_val(item, "performedDateTime") or 
+                    get_val(item, "recordedDate") or 
+                    get_val(item, "onsetDateTime") or
+                    get_val(item, "authoredOn") or 
+                    get_val(item, "occurrenceDateTime") or 
+                    get_val(item, "period.start") or 
+                    get_val(item, "effectivePeriod.start") or "NODATE")
+        
+        # We use the first 10 chars (Date) for the identity key to allow 
+        # matching between systems with slight clock skew, but different days 
+        # will now correctly result in different fingerprints.
+        date_key = date_raw[:10] if date_raw != "NODATE" else "NODATE"
+
+        clinical_key = f"{code}|{date_key}"
+        instance_tracker[f"{res_type}|{clinical_key}"] += 1
+        seq = instance_tracker[f"{res_type}|{clinical_key}"]
+
+        rows.append({
             "linkage_id": f"{source_name}_{internal_id}",
             "internal_id": internal_id,
             "source": source_name,
             "resourceType": res_type,
             "patient_ref": patient_ref,
-            "payload": "",
-            "unique_key": "" 
-        }
+            "fingerprint_id": f"{res_type}|{clinical_key}|{seq}",
+            "payload": generate_clinical_hash(item),
+            "essence_data": get_clinical_essence(item)
+        })
+    return rows, file_stats
 
-        # BUSINESS LOGIC: We ignore platform UUIDs and use Clinical Codes + Dates
-        if res_type == "Patient":
-            # Business Key: Family | Given | DOB
-            fname = normalize_string(get_val(item, "name.0.family"))
-            gname = normalize_string(get_val(item, "name.0.given.0"))
-            dob = get_val(item, 'birthDate')
-            base["unique_key"] = f"{fname}|{gname}|{dob}"
-            base["payload"] = get_val(item, "gender")
-
-        elif res_type == "AllergyIntolerance":
-            # Business Key: Snomed/RxNorm Code + Recorded Date
-            code = get_val(item, 'code.coding.0.code')
-            date = get_val(item, 'recordedDate')[:10]
-            base["unique_key"] = f"{code}|{date}"
-            base["payload"] = get_val(item, "clinicalStatus.coding.0.code")
-
-        elif res_type == "Observation":
-            # Business Key: LOINC + DateTime + (Optional: normalized Method)
-            code = get_val(item, 'code.coding.0.code')
-            # date = get_val(item, 'effectiveDateTime')
-            # base["unique_key"] = f"{code}|{date}"
-
-            timestamp = get_val(item, 'effectiveDateTime') 
-            base["unique_key"] = f"{code}|{timestamp}"
-            base["payload"] = str(get_val(item, "valueQuantity.value"))
-
-        elif res_type == "Condition":
-            # Business Key: Code + Recorded Date (ignore Platform ID)
-            code = get_val(item, 'code.coding.0.code')
-            date = (item.get('recordedDate') or item.get('onsetDateTime') or "N/A")[:10]
-            base["unique_key"] = f"{code}|{date}"
-            base["payload"] = get_val(item, "category.0.coding.0.code")
-
-        elif res_type == "MedicationRequest":
-            m_code = get_val(item, "medicationCodeableConcept.coding.0.code")
-            if m_code == "N/A": 
-                # If it's a reference, we can't use the UUID. 
-                # In synthetic data, we'll try to get the display name or just use the date.
-                m_code = normalize_string(get_val(item, "medicationReference.display"))
-            date = get_val(item, 'authoredOn')[:10]
-            base["unique_key"] = f"{m_code}|{date}"
-            base["payload"] = get_val(item, "status")
-
-        elif res_type == "Procedure":
-            # Business Key: Procedure Code + Date (DO NOT use encounter/location UUID)
-            proc_code = get_val(item, 'code.coding.0.code')
-            date = get_val(item, 'performedDateTime')[:16] # Minute precision
-            base["unique_key"] = f"{proc_code}|{date}"
-            base["payload"] = get_val(item, "status")
-
-        elif res_type == "Immunization":
-            # Business Key: CVX Code + Date
-            v_code = get_val(item, 'vaccineCode.coding.0.code')
-            date = get_val(item, 'occurrenceDateTime')[:10]
-            base["unique_key"] = f"{v_code}|{date}"
-            base["payload"] = get_val(item, "status")
-
-        elif res_type == "Encounter":
-            # Business Key: Type Code + Start Date
-            e_type = get_val(item, 'type.0.coding.0.code')
-            date = get_val(item, 'period.start')[:10]
-            base["unique_key"] = f"{e_type}|{date}"
-            base["payload"] = get_val(item, "status")
-
-        elif res_type == "DocumentReference":
-            # Business Key: LOINC Code + Date
-            doc_type = get_val(item, 'type.coding.0.code')
-            date = get_val(item, 'date')[:10]
-            base["unique_key"] = f"{doc_type}|{date}"
-            base["payload"] = get_val(item, "status")
-
-        if not base["unique_key"]:
-            base["unique_key"] = f"fallback-{internal_id}"
-
-        rows.append(base)
-    return rows
-
-# --- STAGE 2: IDENTITY RESOLUTION ---
+# --- IDENTITY RESOLUTION ---
 def get_patient_matches(df_patients):
     if len(df_patients) < 2: return pd.DataFrame()
-    settings = {
-        "link_type": "dedupe_only",
-        "unique_id_column_name": "linkage_id",
-        "comparisons": [
-            {"output_column_name": "unique_key", "comparison_levels": [
-                {"sql_condition": "unique_key_l = unique_key_r", "label_for_charts": "Exact match"},
-                {"sql_condition": "ELSE", "label_for_charts": "All other queries"}
-            ]}
-        ]
-    }
-    db_api = DuckDBAPI()
-    linker = Linker(df_patients, settings, db_api)
-    return linker.inference.predict(threshold_match_probability=0.95).as_pandas_dataframe()
+    settings = {"link_type": "dedupe_only", "unique_id_column_name": "linkage_id",
+                "comparisons": [{"output_column_name": "internal_id", "comparison_levels": [
+                    {"sql_condition": "internal_id_l = internal_id_r", "m_probability": 0.99, "u_probability": 0.01},
+                    {"sql_condition": "ELSE", "m_probability": 0.01, "u_probability": 0.99}]}]}
+    return Linker(df_patients, settings, DuckDBAPI()).inference.predict(threshold_match_probability=0.9).as_pandas_dataframe()
 
 def create_global_id_map(df_patients, df_matches):
     G = nx.Graph()
-    link_to_internal = dict(zip(df_patients['linkage_id'], df_patients['internal_id']))
+    l_to_i = dict(zip(df_patients['linkage_id'], df_patients['internal_id']))
     for lid in df_patients['linkage_id']: G.add_node(lid)
-    if not df_matches.empty:
-        for _, row in df_matches.iterrows():
-            G.add_edge(row['linkage_id_l'], row['linkage_id_r'])
-    
-    global_id_map = {}
+    for _, row in df_matches.iterrows(): G.add_edge(row['linkage_id_l'], row['linkage_id_r'])
+    mapping = {}
     for cluster in nx.connected_components(G):
-        unique_global_id = "PATIENT-ELIJAH-FISHER" # For this demo, or f"GLOBAL-{str(uuid4())[:8]}"
-        for lid in cluster:
-            global_id_map[link_to_internal[lid]] = unique_global_id
-    return global_id_map
+        unique_global_id = "PATIENT-ELIJAH-FISHER"
+        for lid in cluster: mapping[l_to_i[lid]] = unique_global_id
+    return mapping
 
-# --- STAGE 3: EXECUTION ---
+# --- MAIN ---
 def main(file1, file2):
-    df1 = pd.DataFrame(extract_features(json.load(open(file1)), "Platform_A"))
-    df2 = pd.DataFrame(extract_features(json.load(open(file2)), "Platform_B"))
+    raw1, stats1 = extract_features(json.load(open(file1)), "P1")
+    raw2, stats2 = extract_features(json.load(open(file2)), "P2")
 
-    # 1. Identity Resolution (Force Elijah to match)
-    df_pats = pd.concat([df1[df1['resourceType']=='Patient'], df2[df2['resourceType']=='Patient']])
-    patient_matches = get_patient_matches(df_pats)
-    global_id_map = create_global_id_map(df_pats, patient_matches)
+    df_all = pd.concat([pd.DataFrame(raw1), pd.DataFrame(raw2)])
+    id_map = create_global_id_map(df_all[df_all['resourceType']=='Patient'], get_patient_matches(df_all[df_all['resourceType']=='Patient']))
 
-    def attach_keys(df):
-        # We find the Global ID for the patient this resource belongs to
-        df['global_id'] = df['patient_ref'].apply(lambda x: global_id_map.get(x, "UNKNOWN"))
-        # Fingerprint is: Global Identity + Resource Type + Business Logic Key
-        df['fingerprint'] = df['global_id'] + "|" + df['resourceType'] + "|" + df['unique_key']
-        return df.drop_duplicates(subset=['fingerprint','payload']).set_index('fingerprint')
-        # return df.set_index('fingerprint')
+    def build_index(rows):
+        df = pd.DataFrame(rows)
+        df['gid'] = df['patient_ref'].apply(lambda x: id_map.get(x, "UNKNOWN"))
+        df['final_fp'] = df['gid'] + "|" + df['fingerprint_id']
+        return df.set_index('final_fp')
 
-    idx1 = attach_keys(df1)
-    idx2 = attach_keys(df2)
-
-    all_fps = set(idx1.index) | set(idx2.index)
+    idx1, idx2 = build_index(raw1), build_index(raw2)
+    all_fps = sorted(list(set(idx1.index) | set(idx2.index)))
     changes = []
 
     for fp in all_fps:
-        # Ignore items not linked to a patient for this specific audit
-        if "UNKNOWN" in fp and "Patient" not in fp: continue
-        
-        in_1, in_2 = fp in idx1.index, fp in idx2.index
+        if "Patient" in fp: continue
+        in1, in2 = fp in idx1.index, fp in idx2.index
 
-        # if in_1 and in_2:
-        #     v1, v2 = str(idx1.loc[fp, 'payload']), str(idx2.loc[fp, 'payload'])
-        #     print(v1, v2)
-        #     if v1 != v2:
-        #         changes.append({"Status": "MODIFIED", "Event": fp, "Detail": f"{v1} ➔ {v2}"})
-        #     else:
-        #         changes.append({"Status": "UNCHANGED", "Event": fp})
-        if in_1 and in_2:
-            # FIX: Get values as a list, even if there is only one.
-            # This prevents the "Name: payload, dtype: str" mess.
-            v1_raw = idx1.loc[[fp], 'payload'].unique().tolist()
-            v2_raw = idx2.loc[[fp], 'payload'].unique().tolist()
-            
-            # Sort them so comparison is consistent
-            v1_raw.sort()
-            v2_raw.sort()
-
-            if v1_raw != v2_raw:
-                # Join with commas for a clean printout
-                s1 = ", ".join(map(str, v1_raw))
-                s2 = ", ".join(map(str, v2_raw))
-                changes.append({"Status": "MODIFIED", "Event": fp, "Detail": f"{s1} ➔ {s2}"})
+        if in1 and in2:
+            h1, h2 = idx1.loc[[fp], 'payload'].iloc[0], idx2.loc[[fp], 'payload'].iloc[0]
+            if h1 != h2:
+                e1, e2 = idx1.loc[[fp], 'essence_data'].iloc[0], idx2.loc[[fp], 'essence_data'].iloc[0]
+                diff = deep_diff(e1, e2)
+                changes.append({"Status": "MODIFIED", "Event": fp, "Detail": diff})
             else:
                 changes.append({"Status": "UNCHANGED", "Event": fp})
-        elif in_1:
+        elif in1:
             changes.append({"Status": "REMOVED", "Event": fp})
         else:
             changes.append({"Status": "ADDED", "Event": fp})
 
+    print("\n" + "="*80 + "\nMETADATA: PHYSICAL COUNTS\n" + "="*80)
+    all_types = sorted(list(set(stats1.keys()) | set(stats2.keys())))
+    for rt in all_types:
+        print(f"{rt:<25} | File 1: {stats1[rt]:<4} | File 2: {stats2[rt]:<4}")
+
     report = pd.DataFrame(changes)
-    print("\n" + "="*80 + "\nCROSS-PLATFORM AUDIT SUMMARY\n" + "="*80)
+    print("\n" + "="*80 + "\nAUDIT SUMMARY STATS\n" + "="*80)
     if not report.empty:
         print(report['Status'].value_counts().to_string())
-        # Show a few Unchanged to prove it worked
-        unchanged = report[report['Status'] == "UNCHANGED"]
-        # if not unchanged.empty:
         for status in ["MODIFIED", "ADDED", "REMOVED"]:
             subset = report[report['Status'] == status]
-                # print(subset)
             if not subset.empty:
-                    print(f"\n--- {status} ---")
-                    for _, r in subset.iterrows():
-                        print(f" • {r['Event']}")
-                        if status == "MODIFIED": 
-                            print(f"   Change: {r['Detail']}")    
-        print(f"\n✅ Successfully Matched {len(unchanged)} records across platforms (IDs differed, but clinical data was identical)")
-    else:
-        print("No clinical data matched.")
+                print(f"\n--- {status} ({len(subset)}) ---")
+                for _, r in subset.iterrows():
+                    print(f" • {r['Event']}")
+                    if status == "MODIFIED": print(f"   Change: {r['Detail']}")
 
 if __name__ == "__main__":
-    main('elijah_2.json', 'cigna_synthetic.json')
+    main('elijah.json', 'cigna_synthetic.json')
