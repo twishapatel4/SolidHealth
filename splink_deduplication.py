@@ -30,13 +30,11 @@ def get_val(obj, path, default=None):
 # --- CLINICAL HASHING LOGIC ---
 def get_clinical_essence(obj):
     """
-    Recursively removes technical noise and platform identifiers.
-    Normalizes dates and numbers for stable hashing.
+    Recursively removes technical IDs but KEEPS lotNumber and clinical values.
     """
-    # Noise keys that are platform-dependent or non-readable
     noise = {
         'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
-        'url', 'system', 'fullUrl', 'identifier', 'data', 'attachment'
+        'url', 'system', 'fullUrl', 'identifier'
     }
     
     if isinstance(obj, dict):
@@ -47,29 +45,21 @@ def get_clinical_essence(obj):
     elif isinstance(obj, (int, float)):
         return float(obj)
     elif isinstance(obj, str):
-        # Truncate timestamps to Date only for Identity logic
-        if re.match(r'\d{4}-\d{2}-\d{2}t', obj.lower()):
-            return obj[:10]
         return obj.strip().lower()
     return obj
 
 def generate_clinical_hash(obj):
-    """SHA256 of the clinical essence."""
     essence = get_clinical_essence(obj)
     serialized = json.dumps(essence, sort_keys=True).encode('utf-8')
     return hashlib.sha256(serialized).hexdigest()
 
 def deep_diff(d1, d2, path=""):
-    """Finds readable clinical differences between two objects."""
     if not isinstance(d1, dict) or not isinstance(d2, dict):
         return f"{d1} ➔ {d2}"
-    
     diffs = []
     keys = set(d1.keys()) | set(d2.keys())
     for k in keys:
-        # Skip technical data fields in the final printout for readability
-        if k in ['data', 'attachment', 'content']: continue
-        
+        if k in ['data', 'attachment']: continue
         v1, v2 = d1.get(k), d2.get(k)
         if v1 != v2:
             if isinstance(v1, dict) and isinstance(v2, dict):
@@ -81,9 +71,8 @@ def deep_diff(d1, d2, path=""):
 
 # --- STAGE 1: FEATURE EXTRACTION ---
 def extract_features(data, source_name):
-    rows = []
+    temp_list = []
     file_stats = Counter()
-    instance_tracker = Counter()
 
     for item in data:
         res_type = item.get('resourceType')
@@ -96,67 +85,57 @@ def extract_features(data, source_name):
                    item.get('subject', {}).get('display') or "")
         patient_ref = clean_id(raw_ref)
         
-        # 1. Improved Identity Logic (Finding Code/Date)
-        # code = (get_val(item, "code.coding.0.code") or 
-        #         get_val(item, "vaccineCode.coding.0.code") or 
-        #         get_val(item, "type.0.coding.0.code") or 
-        #         get_val(item, "class.code") or 
-        #         get_val(item, "medicationCodeableConcept.coding.0.code") or "NOCODE")
+        # 1. Broad Identity Discovery
         code = (get_val(item, "code.coding.0.code") or 
                 get_val(item, "vaccineCode.coding.0.code") or 
                 get_val(item, "type.0.coding.0.code") or 
-                get_val(item, "type.coding.0.code") or 
-                get_val(item, "category.0.coding.0.code") or # For CarePlans
-                get_val(item, "category.1.coding.0.code") or # For CarePlans
-                get_val(item, "name") or    
-                get_val(item, "class.code") or 
-                get_val(item, "medicationCodeableConcept.coding.0.code") or 
-                clean_id(get_val(item, "medicationReference.reference")) or # Specific for your Meds
                 get_val(item, "category.0.coding.0.code") or 
-                "NOCODE")
-        
-        # date_raw = (get_val(item, "effectiveDateTime") or 
-        #             get_val(item, "performedDateTime") or 
-        #             get_val(item, "recordedDate") or 
-        #             get_val(item, "onsetDateTime") or
-        #             get_val(item, "authoredOn") or 
-        #             get_val(item, "period.start") or "NODATE")
+                get_val(item, "medicationCodeableConcept.coding.0.code") or 
+                clean_id(get_val(item, "medicationReference.reference")) or 
+                get_val(item, "name") or "NOCODE")
         
         date_raw = (get_val(item, "effectiveDateTime") or 
-                    get_val(item, "recordedDate") or 
                     get_val(item, "performedDateTime") or 
-                    get_val(item, "authoredOn") or        # Specific for Meds
-                    get_val(item, "occurrenceDateTime") or # Specific for Immunizations
+                    get_val(item, "recordedDate") or 
+                    get_val(item, "authoredOn") or 
+                    get_val(item, "occurrenceDateTime") or 
                     get_val(item, "period.start") or 
                     get_val(item, "date") or 
-                    get_val(item, "meta.lastUpdated") or   # Technical fallback
-                    "NODATE")
-        # date_key = date_raw[:10] if date_raw != "NODATE" else "NODATE"
-        date_key = date_raw[:16] if date_raw != "NODATE" else "NODATE"
+                    get_val(item, "meta.lastUpdated") or "NODATE")
+        
+        date_key = str(date_raw)[:16].upper() # Minute precision for unique grouping
 
-        # Create unique instance fingerprint
-        clinical_id = f"{code}|{date_key}"
-        instance_tracker[f"{res_type}|{clinical_id}"] += 1
-        seq = instance_tracker[f"{res_type}|{clinical_id}"]
-
-        rows.append({
+        essence = get_clinical_essence(item)
+        temp_list.append({
             "linkage_id": f"{source_name}_{internal_id}",
             "internal_id": internal_id,
             "source": source_name,
             "resourceType": res_type,
             "patient_ref": patient_ref,
-            "fingerprint_id": f"{res_type}|{clinical_id}|{seq}",
+            "clinical_id": f"{code}|{date_key}",
             "payload_hash": generate_clinical_hash(item),
-            "essence": get_clinical_essence(item)
+            "essence": essence,
+            "essence_str": str(essence), # For sorting
+            "clinical_val": str(get_val(item, "valueQuantity.value") or get_val(item, "status") or "N/A")
         })
-    return rows, file_stats
 
-# --- STAGE 2: IDENTITY RESOLUTION ---
+    if not temp_list: return [], file_stats
+
+    # --- DETERMINISTIC ALIGNMENT FIX ---
+    df = pd.DataFrame(temp_list)
+    # Sort by clinical content so that identical items always get paired with the same sequence number
+    df = df.sort_values(by=['resourceType', 'clinical_id', 'essence_str'])
+    df['seq'] = df.groupby(['resourceType', 'clinical_id']).cumcount() + 1
+    df['fingerprint_id'] = df['resourceType'] + "|" + df['clinical_id'] + "|" + df['seq'].astype(str)
+
+    return df.to_dict('records'), file_stats
+
+# --- IDENTITY RESOLUTION ---
 def get_patient_matches(df_patients):
     if len(df_patients) < 2: return pd.DataFrame()
     settings = {"link_type": "dedupe_only", "unique_id_column_name": "linkage_id",
-                "comparisons": [{"output_column_name": "res_type", "comparison_levels": [
-                    {"sql_condition": "resourceType_l = resourceType_r", "m_probability": 0.99, "u_probability": 0.01},
+                "comparisons": [{"output_column_name": "internal_id", "comparison_levels": [
+                    {"sql_condition": "internal_id_l = internal_id_r", "m_probability": 0.99, "u_probability": 0.01},
                     {"sql_condition": "ELSE", "m_probability": 0.01, "u_probability": 0.99}]}]}
     return Linker(df_patients, settings, DuckDBAPI()).inference.predict(threshold_match_probability=0.9).as_pandas_dataframe()
 
@@ -172,38 +151,23 @@ def create_global_id_map(df_patients, df_matches):
         for lid in cluster: mapping[l_to_i[lid]] = unique_global_id
     return mapping
 
-# --- MAIN EXECUTION ---
+# --- MAIN ---
 def main(file1, file2):
     raw1, stats1 = extract_features(json.load(open(file1)), "P1")
     raw2, stats2 = extract_features(json.load(open(file2)), "P2")
 
     df_all = pd.concat([pd.DataFrame(raw1), pd.DataFrame(raw2)])
-    # id_map = create_global_id_map(df_all[df_all['resourceType']=='Patient'], get_patient_matches(df_all[df_all['resourceType']=='Patient']))
-    patient_matches = get_patient_matches(df_all[df_all['resourceType']=='Patient'])
-    id_map = create_global_id_map(df_all[df_all['resourceType']=='Patient'], patient_matches)
-    
-    # NEW: Get the first resolved Patient ID to use as a fallback for infrastructure
+    id_map = create_global_id_map(df_all[df_all['resourceType']=='Patient'], get_patient_matches(df_all[df_all['resourceType']=='Patient']))
     default_gid = list(id_map.values())[0] if id_map else "GLOBAL-SYSTEM"
-    # def build_index(rows):
-    #     df = pd.DataFrame(rows)
-    #     df['gid'] = df['patient_ref'].apply(lambda x: id_map.get(x, "UNKNOWN"))
-    #     df['final_fp'] = df['gid'] + "|" + df['fingerprint_id']
-    #     return df.set_index('final_fp')
+
     def build_index(rows):
         df = pd.DataFrame(rows)
-        
         def get_owner(row):
-            # 1. Try to find the real link
             gid = id_map.get(row['patient_ref'])
             if gid: return gid
-            
-            # 2. Fallback for Infrastructure resources
-            infra_types = ["Location", "Organization", "Practitioner", "Medication"]
-            if row['resourceType'] in infra_types:
+            if row['resourceType'] in ["Location", "Organization", "Practitioner", "Medication"]: 
                 return default_gid
-            
             return "UNKNOWN"
-
         df['gid'] = df.apply(get_owner, axis=1)
         df['final_fp'] = df['gid'] + "|" + df['fingerprint_id']
         return df.set_index('final_fp')
@@ -221,10 +185,8 @@ def main(file1, file2):
             if h1 != h2:
                 e1, e2 = idx1.loc[[fp], 'essence'].iloc[0], idx2.loc[[fp], 'essence'].iloc[0]
                 diff = deep_diff(e1, e2)
-                if diff:
-                    changes.append({"Status": "MODIFIED", "Event": fp, "Detail": diff})
-                else:
-                    changes.append({"Status": "UNCHANGED", "Event": fp})
+                if diff: changes.append({"Status": "MODIFIED", "Event": fp, "Detail": diff})
+                else: changes.append({"Status": "UNCHANGED", "Event": fp})
             else:
                 changes.append({"Status": "UNCHANGED", "Event": fp})
         elif in1:
@@ -232,7 +194,6 @@ def main(file1, file2):
         else:
             changes.append({"Status": "ADDED", "Event": fp})
 
-    # --- PRINT REPORT ---
     print("\n" + "="*80 + "\nMETADATA: PHYSICAL RESOURCE COUNTS\n" + "="*80)
     all_types = sorted(list(set(stats1.keys()) | set(stats2.keys())))
     for rt in all_types:
@@ -251,4 +212,4 @@ def main(file1, file2):
                     if status == "MODIFIED": print(f"   Change: {r['Detail']}")
 
 if __name__ == "__main__":
-    main('elijah.json', 'cigna_synthetic.json')
+    main('elijah.json', 'elijah_2.json')
