@@ -106,6 +106,9 @@ def extract_features(data, source_name):
                 get_val(item, "vaccineCode.coding.0.code") or 
                 get_val(item, "type.0.coding.0.code") or 
                 get_val(item, "type.coding.0.code") or 
+                get_val(item, "category.0.coding.0.code") or # For CarePlans
+                get_val(item, "category.1.coding.0.code") or # For CarePlans
+                get_val(item, "name") or    
                 get_val(item, "class.code") or 
                 get_val(item, "medicationCodeableConcept.coding.0.code") or 
                 clean_id(get_val(item, "medicationReference.reference")) or # Specific for your Meds
