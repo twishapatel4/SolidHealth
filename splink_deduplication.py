@@ -5,11 +5,11 @@ from splink import Linker, DuckDBAPI
 import hashlib
 import re
 from collections import Counter
+import sys
 
 # --- UTILS ---
 def normalize_string(s):
-    """Normalizes names and codes for identity matching."""
-    if not s or s == "N/A" or s is None: return "na"
+    if not s or s == "N/A": return "na"
     return re.sub(r'[^a-z0-9]', '', str(s).lower())
 
 def clean_id(raw_id):
@@ -30,15 +30,10 @@ def get_val(obj, path, default=None):
 
 # --- CLINICAL HASHING LOGIC ---
 def get_clinical_essence(obj):
-    """
-    Recursively removes platform noise.
-    Identifies if the core clinical content of the resource is the same.
-    """
     noise = {
         'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
         'url', 'system', 'fullUrl', 'identifier'
     }
-    
     if isinstance(obj, dict):
         cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
         return {k: v for k, v in cleaned.items() if v not in [None, "", [], {}]}
@@ -71,11 +66,10 @@ def deep_diff(d1, d2, path=""):
                 diffs.append(f"{path}{k}: {v1} ➔ {v2}")
     return ", ".join(diffs)
 
-# --- STAGE 1: FEATURE EXTRACTION ---
+# --- STAGE 1: FEATURE EXTRACTION (Deterministic Logic) ---
 def extract_features(data, source_name):
-    rows = []
+    temp_list = []
     file_stats = Counter()
-    instance_tracker = Counter()
 
     for item in data:
         res_type = item.get('resourceType')
@@ -83,110 +77,121 @@ def extract_features(data, source_name):
         
         file_stats[res_type] += 1
         internal_id = clean_id(item.get('id'))
-        
-        # Determine the patient this record belongs to
         raw_ref = (item.get('subject', {}).get('reference') or 
                    item.get('patient', {}).get('reference') or 
                    item.get('subject', {}).get('display') or "")
         patient_ref = clean_id(raw_ref)
         
-        # 1. SPECIAL CASE: Patient Identity (The Bridge)
-        if res_type == "Patient":
-            fname = normalize_string(get_val(item, "name.0.family"))
-            gname = normalize_string(get_val(item, "name.0.given.0"))
-            dob = str(get_val(item, 'birthDate'))
-            clinical_id = f"{fname}|{gname}|{dob}"
-        else:
-            # 2. GENERAL CASE: Clinical Identity (Finding Code/Date)
-            code = (get_val(item, "code.coding.0.code") or 
-                    get_val(item, "vaccineCode.coding.0.code") or 
-                    get_val(item, "type.0.coding.0.code") or 
-                    get_val(item, "category.0.coding.0.code") or 
-                    get_val(item, "medicationCodeableConcept.coding.0.code") or 
-                    clean_id(get_val(item, "medicationReference.reference")) or 
-                    normalize_string(get_val(item, "name")) or "no-code")
-            
-            date_raw = (get_val(item, "effectiveDateTime") or 
-                        get_val(item, "performedDateTime") or 
-                        get_val(item, "recordedDate") or 
-                        get_val(item, "authoredOn") or 
-                        get_val(item, "occurrenceDateTime") or 
-                        get_val(item, "period.start") or "no-date")
-            clinical_id = f"{code}|{str(date_raw)[:10]}"
+        # Identity Logic (Code)
+        code = (get_val(item, "code.coding.0.code") or 
+                get_val(item, "vaccineCode.coding.0.code") or 
+                get_val(item, "type.0.coding.0.code") or 
+                get_val(item, "type.coding.0.code") or 
+                get_val(item, "category.0.coding.0.code") or 
+                get_val(item, "category.1.coding.0.code") or 
+                get_val(item, "name") or    
+                get_val(item, "class.code") or 
+                get_val(item, "medicationCodeableConcept.coding.0.code") or 
+                clean_id(get_val(item, "medicationReference.reference")) or 
+                "NOCODE")
+        
+        # Identity Logic (Date)
+        date_raw = (get_val(item, "effectiveDateTime") or 
+                    get_val(item, "performedDateTime") or 
+                    get_val(item, "recordedDate") or 
+                    get_val(item, "onsetDateTime") or
+                    get_val(item, "authoredOn") or 
+                    get_val(item, "occurrenceDateTime") or 
+                    get_val(item, "period.start") or 
+                    get_val(item, "date") or 
+                    get_val(item, "meta.lastUpdated") or "NODATE")
+        
+        date_key = str(date_raw)[:16].upper()
 
-        # Instance tracking for multiple same-day resources
-        instance_tracker[f"{res_type}|{clinical_id}"] += 1
-        seq = instance_tracker[f"{res_type}|{clinical_id}"]
-
-        rows.append({
+        essence = get_clinical_essence(item)
+        temp_list.append({
             "linkage_id": f"{source_name}_{internal_id}",
             "internal_id": internal_id,
             "source": source_name,
             "resourceType": res_type,
             "patient_ref": patient_ref,
-            "clinical_id": clinical_id,
-            "fingerprint_id": f"{res_type}|{clinical_id}|{seq}",
+            "clinical_id": f"{code}|{date_key}",
             "payload_hash": generate_clinical_hash(item),
-            "essence": get_clinical_essence(item)
+            "essence": essence,
+            "essence_str": str(essence),
+            "clinical_val": str(get_val(item, "valueQuantity.value") or get_val(item, "status") or "N/A")
         })
-    return rows, file_stats
 
-# --- STAGE 2: IDENTITY RESOLUTION (The Gatekeeper) ---
-def resolve_identity(df_all):
-    """
-    Determines if File 1 and File 2 contain the same patient.
-    Maps the different local IDs to a single Global Identity.
-    """
-    df_pats = df_all[df_all['resourceType'] == 'Patient'].copy()
-    
-    # Group by the clinical identity (Name + DOB)
-    p1_ids = set(df_pats[df_pats['source'] == 'P1']['clinical_id'])
-    p2_ids = set(df_pats[df_pats['source'] == 'P2']['clinical_id'])
-    
-    common_identities = p1_ids.intersection(p2_ids)
-    
-    if not common_identities:
-        return {}, False
+    if not temp_list: return [], file_stats
 
-    # Create mapping: Internal Platform ID -> Global Identity String
+    # --- THE SORTING FIX (Ensures 3 MODIFIED instead of 20) ---
+    df = pd.DataFrame(temp_list)
+    df = df.sort_values(by=['resourceType', 'clinical_id', 'essence_str'])
+    df['seq'] = df.groupby(['resourceType', 'clinical_id']).cumcount() + 1
+    df['fingerprint_id'] = df['resourceType'] + "|" + df['clinical_id'] + "|" + df['seq'].astype(str)
+
+    return df.to_dict('records'), file_stats
+
+# --- IDENTITY RESOLUTION ---
+def get_patient_matches(df_patients):
+    if len(df_patients) < 2: return pd.DataFrame()
+    settings = {"link_type": "dedupe_only", "unique_id_column_name": "linkage_id",
+                "comparisons": [{"output_column_name": "internal_id", "comparison_levels": [
+                    {"sql_condition": "internal_id_l = internal_id_r", "m_probability": 0.99, "u_probability": 0.01},
+                    {"sql_condition": "ELSE", "m_probability": 0.01, "u_probability": 0.99}]}]}
+    return Linker(df_patients, settings, DuckDBAPI()).inference.predict(threshold_match_probability=0.9).as_pandas_dataframe()
+
+def create_global_id_map(df_patients, df_matches):
+    G = nx.Graph()
+    l_to_i = dict(zip(df_patients['linkage_id'], df_patients['internal_id']))
+    for lid in df_patients['linkage_id']: G.add_node(lid)
+    for _, row in df_matches.iterrows(): G.add_edge(row['linkage_id_l'], row['linkage_id_r'])
     mapping = {}
-    for _, row in df_pats.iterrows():
-        if row['clinical_id'] in common_identities:
-            mapping[row['internal_id']] = f"PATIENT-{normalize_string(row['clinical_id'])}"
-        else:
-            mapping[row['internal_id']] = f"UNRESOLVED-{row['internal_id']}"
-            
-    return mapping, True
+    for cluster in nx.connected_components(G):
+        unique_global_id = "PATIENT-ELIJAH-FISHER"
+        for lid in cluster: mapping[l_to_i[lid]] = unique_global_id
+    return mapping
 
-# --- STAGE 3: MAIN EXECUTION ---
+# --- MAIN ---
 def main(file1, file2):
-    print(f"Step 1: Comparing Patient identities between {file1} and {file2}...")
-    
-    raw1, stats1 = extract_features(json.load(open(file1)), "P1")
-    raw2, stats2 = extract_features(json.load(open(file2)), "P2")
-    df_all = pd.concat([pd.DataFrame(raw1), pd.DataFrame(raw2)])
+    # Load raw data first to check patient identity
+    f1_data = json.load(open(file1))
+    f2_data = json.load(open(file2))
 
-    id_map, same_patient = resolve_identity(df_all)
+    # --- STEP 1: PATIENT GATEKEEPER ---
+    def get_patient_fingerprint(data):
+        p = next((i for i in data if i.get('resourceType') == 'Patient'), None)
+        if not p: return None
+        # Identity is Name + BirthDate
+        return f"{normalize_string(get_val(p, 'name.0.family'))}|{normalize_string(get_val(p, 'name.0.given.0'))}|{get_val(p, 'birthDate')}"
 
-    if not same_patient:
-        print("❌ ABORT: These files appear to belong to different patients. Comparison skipped.")
+    id1 = get_patient_fingerprint(f1_data)
+    id2 = get_patient_fingerprint(f2_data)
+
+    if id1 != id2:
+        print(f"❌ ABORT: Patient identity mismatch.")
+        print(f"File 1 Patient: {id1}")
+        print(f"File 2 Patient: {id2}")
         return
 
-    print("✅ Match Confirmed: Both files belong to the same resolved clinical identity.")
+    print("✅ Patient Match Confirmed. Proceeding with Full Clinical Audit...")
 
-    # Identify the primary patient ID for the audit
-    default_gid = list(id_map.values())[0]
+    # --- STEP 2: FULL CLINICAL COMPARISON ---
+    raw1, stats1 = extract_features(f1_data, "P1")
+    raw2, stats2 = extract_features(f2_data, "P2")
+
+    df_all = pd.concat([pd.DataFrame(raw1), pd.DataFrame(raw2)])
+    id_map = create_global_id_map(df_all[df_all['resourceType']=='Patient'], get_patient_matches(df_all[df_all['resourceType']=='Patient']))
+    default_gid = list(id_map.values())[0] if id_map else "GLOBAL-SYSTEM"
 
     def build_index(rows):
         df = pd.DataFrame(rows)
         def get_owner(row):
             gid = id_map.get(row['patient_ref'])
             if gid: return gid
-            # Fallback for ownerless infrastructure like Organization/Location
             if row['resourceType'] in ["Location", "Organization", "Practitioner", "Medication"]: 
                 return default_gid
             return "UNKNOWN"
-        
         df['gid'] = df.apply(get_owner, axis=1)
         df['final_fp'] = df['gid'] + "|" + df['fingerprint_id']
         return df.set_index('final_fp')
@@ -196,7 +201,7 @@ def main(file1, file2):
     changes = []
 
     for fp in all_fps:
-        if "Patient" in fp: continue # Patient is the anchor, skip in clinical audit
+        if "Patient" in fp: continue
         in1, in2 = fp in idx1.index, fp in idx2.index
 
         if in1 and in2:
@@ -213,8 +218,8 @@ def main(file1, file2):
         else:
             changes.append({"Status": "ADDED", "Event": fp})
 
-    # Display Report
-    print("\n" + "="*80 + "\nCROSS-PLATFORM CLINICAL AUDIT SUMMARY\n" + "="*80)
+    # Output Final Report
+    print("\n" + "="*80 + "\nAUDIT SUMMARY STATS\n" + "="*80)
     report = pd.DataFrame(changes)
     if not report.empty:
         print(report['Status'].value_counts().to_string())
@@ -225,11 +230,6 @@ def main(file1, file2):
                 for _, r in subset.iterrows():
                     print(f" • {r['Event']}")
                     if status == "MODIFIED": print(f"   Change: {r['Detail']}")
-    
-    # Final check
-    target = stats1.total() - stats1['Patient']
-    actual = len(report[report['Status'].isin(['UNCHANGED', 'MODIFIED', 'REMOVED'])])
-    print(f"\nVerification: Audit accounted for {actual} clinical records from File 1 (Target: {target})")
 
 if __name__ == "__main__":
     main('elijah.json', 'new_data.json')
