@@ -1,0 +1,1405 @@
+[
+  {
+    "resourceType": "Patient",
+    "id": "PLAT-B-DEMOSKI-50",
+    "meta": {
+      "lastUpdated": "2024-01-15T12:00:00.000+00:00",
+      "profile": [
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+      ]
+    },
+    "extension": [
+      {
+        "url": "http://hl7.org/fhir/StructureDefinition/patient-religion",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation",
+              "code": "1001",
+              "display": "Agnosticism"
+            }
+          ]
+        }
+      }
+    ],
+    "identifier": [
+      {
+        "system": "http://hl7.org/fhir/sid/us-ssn",
+        "value": "987119876"
+      },
+      {
+        "use": "official",
+        "system": "http://platform-b-ehr.com/identifiers/patient",
+        "value": "P-8827162"
+      }
+    ],
+    "name": [
+      {
+        "use": "official",
+        "family": "Demoski",
+        "given": [
+          "Helen",
+          "Ann"
+        ],
+        "prefix": [
+          "Mrs"
+        ]
+      }
+    ],
+    "telecom": [
+      {
+        "system": "phone",
+        "value": "(555) 555-5555",
+        "use": "home"
+      },
+      {
+        "system": "email",
+        "value": "helen.ann.demoski@provider-b.com"
+      }
+    ],
+    "gender": "female",
+    "birthDate": "1950-04-21",
+    "address": [
+      {
+        "use": "home",
+        "line": [
+          "131 Parkland Ln"
+        ],
+        "city": "Richmond",
+        "state": "VA",
+        "postalCode": "23233",
+        "country": "USA"
+      }
+    ]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-001-patient-sync",
+    "target": [
+      {
+        "reference": "Patient/PLAT-B-DEMOSKI-50"
+      }
+    ],
+    "recorded": "2024-01-15T12:00:00Z",
+    "activity": {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-DataOperation",
+          "code": "CREATE"
+        }
+      ]
+    },
+    "agent": [
+      {
+        "who": {
+          "display": "Platform B Data Bridge"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "AllergyIntolerance",
+    "id": "PLAT-B-ALLERGY-1",
+    "clinicalStatus": {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
+          "code": "active"
+        }
+      ]
+    },
+    "type": "allergy",
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "256259004",
+          "display": "Pollen allergy 2"
+        }
+      ],
+      "text": "Pollen Allergy"
+    },
+    "patient": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "onsetDateTime": "2015-07-23",
+    "recordedDate": "2017-01-28T10:00:00Z"
+  },
+  {
+    "resourceType": "Basic",
+    "id": "PLAT-B-REFERRAL-100",
+    "extension": [
+      {
+        "url": "http://careevolution.com/fhirextensions#referral-period",
+        "valuePeriod": {
+          "start": "2016-01-08",
+          "end": "2016-01-10"
+        }
+      },
+      {
+        "url": "http://careevolution.com/fhirextensions#referral-authorizationNumber",
+        "valueString": "AUTH-1234-PLAT-B"
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/basic-resource-type",
+          "code": "referral"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    }
+  },
+  {
+    "resourceType": "Claim",
+    "id": "PLAT-B-CLAIM-999",
+    "identifier": [
+      {
+        "value": "CLAIM-B-8821"
+      }
+    ],
+    "status": "active",
+    "type": {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/claim-type",
+          "code": "institutional"
+        }
+      ]
+    },
+    "use": "claim",
+    "patient": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "billablePeriod": {
+      "start": "2013-09-01",
+      "end": "2013-09-11"
+    },
+    "diagnosis": [
+      {
+        "sequence": 1,
+        "diagnosisCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm",
+              "code": "J96.21",
+              "display": "Acute and chronic respiratory failure with hypoxia"
+            }
+          ]
+        }
+      }
+    ],
+    "total": {
+      "value": 64488.35,
+      "currency": "USD"
+    }
+  },
+    {
+    "resourceType": "Condition",
+    "id": "problem0",
+    "category": [
+      {
+        "coding": [
+          {
+            "system": "http://fhir.carevolution.com/codes/DemoNamespace/DiagnosisType",
+            "code": "Primary",
+            "display": "Primary Diagnosis from the new file",
+            "userSelected": true
+          },
+          {
+            "system": "http://careevolution.com/fhircodes#DiagnosisType",
+            "code": "Primary",
+            "display": "Primary",
+            "userSelected": false
+          }
+        ]
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "system": "http://fhir.carevolution.com/codes/DemoNamespace/DiagnosisCode",
+          "code": "123.4",
+          "display": "Some diagnosis requiring surgery.",
+          "userSelected": true
+        },
+        {
+          "system": "http://fhir.carevolution.com/codes/z-ICD9-DONOTUSE/DiagnosisCode",
+          "version": "LEGACY",
+          "code": "1234",
+          "display": "Diphyllobothriasis, intestinal",
+          "userSelected": false
+        },
+        {
+          "system": "http://hl7.org/fhir/sid/icd-9-cm",
+          "code": "123.4",
+          "display": "Diphyllobothriasis, intestinal",
+          "userSelected": false
+        },
+        {
+          "system": "http://fhir.carevolution.com/codes/ICD9/DiagnosisCode",
+          "code": "1234",
+          "display": "Diphyllobothriasis, intestinal",
+          "userSelected": false
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/d4b1d050-584f-4797-a9c7-ab72e4cd4452",
+      "identifier": {
+        "system": "http://careevolution.com/fhir/PatientId",
+        "value": "f4968df0-3121-e611-8128-0a69c1b3225b"
+      }
+    },
+    "onsetDateTime": "2016-01-08T00:00:00-05:00"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PLAT-B-COND-001",
+    "clinicalStatus": {
+      "coding": [
+        {
+          "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+          "code": "active"
+        }
+      ]
+    },
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "67905004",
+          "display": "Acute-on-chronic respiratory failure"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "onsetDateTime": "2013-09-01T00:00:00Z"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PLAT-B-COND-002",
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "235595009",
+          "display": "Gastroesophageal reflux disease"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    }
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PLAT-B-COND-003",
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "69896004",
+          "display": "Rheumatoid arthritis"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    }
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PLAT-B-COND-004",
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "238136002",
+          "display": "Morbid obesity"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    }
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PLAT-B-COND-005",
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "42343007",
+          "display": "Congestive heart failure"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    }
+  },
+  {
+    "resourceType": "Device",
+    "id": "PLAT-B-DEVICE-IMPLANT",
+    "status": "active",
+    "distinctIdentifier": "PB-DH-9921",
+    "manufacturer": "HealthTech Systems",
+    "patient": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "type": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "6012004",
+          "display": "Hearing aid"
+        }
+      ]
+    }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "PLAT-B-LAB-RPT-1",
+    "status": "final",
+    "category": [
+      {
+        "coding": [
+          {
+            "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
+            "code": "LAB"
+          }
+        ]
+      }
+    ],
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "2093-3",
+          "display": "Cholesterol Panel"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2025-01-27T08:25:00-05:00",
+    "result": [
+      {
+        "reference": "Observation/PB-OBS-CHOL-1"
+      },
+      {
+        "reference": "Observation/PB-OBS-HDL-1"
+      }
+    ]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-CHOL-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "2093-3",
+          "display": "Total Cholesterol"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2025-01-27T08:25:00-05:00",
+    "valueQuantity": {
+      "value": 135.0,
+      "unit": "mg/dL",
+      "system": "http://unitsofmeasure.org",
+      "code": "mg/dL"
+    },
+    "referenceRange": [
+      {
+        "high": {
+          "value": 190.0
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-HDL-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "2085-9",
+          "display": "HDL Cholesterol"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2025-01-27T08:25:00-05:00",
+    "valueQuantity": {
+      "value": 45.0,
+      "unit": "mg/dL",
+      "system": "http://unitsofmeasure.org",
+      "code": "mg/dL"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-BUN-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "6299-2",
+          "display": "Blood Urea Nitrogen"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2024-12-03T22:13:00-05:00",
+    "valueQuantity": {
+      "value": 26.0,
+      "unit": "mg/dL"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-K-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "2823-3",
+          "display": "Potassium"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2024-12-03T22:13:00-05:00",
+    "valueQuantity": {
+      "value": 4.3,
+      "unit": "mmol/L"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-CL-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "2075-0",
+          "display": "Chloride"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2024-12-03T22:13:00-05:00",
+    "valueQuantity": {
+      "value": 104.0,
+      "unit": "mmol/L"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-HGB-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "718-7",
+          "display": "Hemoglobin"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2024-12-03T23:32:00-05:00",
+    "valueQuantity": {
+      "value": 10.2,
+      "unit": "g/dL"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-WBC-1",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "6690-2",
+          "display": "White Blood Cell Count"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2024-12-03T23:32:00-05:00",
+    "valueQuantity": {
+      "value": 16.6,
+      "unit": "10*3/uL"
+    }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-BP-SYS",
+    "status": "final",
+    "code": {
+      "coding": [
+        {
+          "system": "http://loinc.org",
+          "code": "8480-6",
+          "display": "Systolic BP"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "effectiveDateTime": "2016-05-22T14:00:00Z",
+    "valueQuantity": {
+      "value": 160.0,
+      "unit": "mmHg"
+    }
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "id": "PB-MED-REQ-001",
+    "status": "completed",
+    "intent": "order",
+    "medicationCodeableConcept": {
+      "coding": [
+        {
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "311353",
+          "display": "Lisinopril 2.5 MG Oral Tablet"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "authoredOn": "2021-05-22",
+    "requester": {
+      "reference": "Practitioner/PLAT-B-PRAC-001"
+    }
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "PLAT-B-PRAC-001",
+    "identifier": [
+      {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "1437149283"
+      }
+    ],
+    "name": [
+      {
+        "family": "Renze",
+        "given": [
+          "Christopher"
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "PLAT-B-PRAC-002",
+    "name": [
+      {
+        "family": "Smith",
+        "given": [
+          "Mary"
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "PLAT-B-PRAC-003",
+    "name": [
+      {
+        "family": "Johnson",
+        "given": [
+          "Bob"
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "PLAT-B-PRAC-004",
+    "name": [
+      {
+        "family": "White",
+        "given": [
+          "Sheila"
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "PLAT-B-PRAC-005",
+    "name": [
+      {
+        "family": "Williams",
+        "given": [
+          "Rick"
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Organization",
+    "id": "PLAT-B-ORG-1",
+    "name": "General Medical Center - Platform B"
+  },
+  {
+    "resourceType": "Encounter",
+    "id": "PLAT-B-ENC-1",
+    "status": "finished",
+    "class": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "AMB",
+      "display": "ambulatory"
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "period": {
+      "start": "2016-05-19T00:00:00Z",
+      "end": "2016-05-24T08:00:00Z"
+    }
+  },
+  {
+    "resourceType": "Encounter",
+    "id": "PLAT-B-ENC-2",
+    "status": "finished",
+    "class": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "EMER"
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "period": {
+      "start": "2013-02-10T00:00:00Z"
+    }
+  },
+  {
+    "resourceType": "Procedure",
+    "id": "PLAT-B-PROC-001",
+    "status": "completed",
+    "code": {
+      "coding": [
+        {
+          "system": "http://snomed.info/sct",
+          "code": "38.97",
+          "display": "CVC Placement"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/PLAT-B-DEMOSKI-50"
+    },
+    "performedDateTime": "2013-09-01T00:00:00Z"
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-claim-update",
+    "target": [
+      {
+        "reference": "Claim/PLAT-B-CLAIM-999"
+      }
+    ],
+    "recorded": "2024-02-01T10:00:00Z",
+    "agent": [
+      {
+        "who": {
+          "display": "Billing System B"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-obs-sync",
+    "target": [
+      {
+        "reference": "Observation/PB-OBS-CHOL-1"
+      }
+    ],
+    "recorded": "2025-01-27T10:00:00Z",
+    "agent": [
+      {
+        "who": {
+          "display": "Lab Bridge B"
+        }
+      }
+    ]
+  },
+  {
+    "resourceType": "Binary",
+    "id": "PLAT-B-REPORT-BINARY",
+    "contentType": "text/plain",
+    "data": "U3ludGhldGljIFBsYXRmb3JtIEIgT3BlcmF0aXZlIFJlcG9ydDogUGF0aWVudCBIZWxlbiBEZW1vc2tpIHVuZGVyd2VudCBzdXJnZXJ5IHdpdGhvdXQgY29tcGxpY2F0aW9ucy4="
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-001",
+    "target": [{"reference": "Observation/PB-OBS-BUN-1"}],
+    "recorded": "2024-12-04T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-002",
+    "target": [{"reference": "Observation/PB-OBS-K-1"}],
+    "recorded": "2024-12-04T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-003",
+    "target": [{"reference": "Observation/PB-OBS-CL-1"}],
+    "recorded": "2024-12-04T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-004",
+    "target": [{"reference": "Observation/PB-OBS-HGB-1"}],
+    "recorded": "2024-12-04T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-005",
+    "target": [{"reference": "Observation/PB-OBS-WBC-1"}],
+    "recorded": "2024-12-04T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PB-DIAG-SINUS",
+    "code": {
+      "coding": [{"system": "http://snomed.info/sct", "code": "15805002", "display": "Acute sinusitis"}]
+    },
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "onsetDateTime": "2012-07-12"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PB-DIAG-FRACTURE-1",
+    "code": {
+      "coding": [{"system": "http://snomed.info/sct", "code": "269083002", "display": "Colles fracture"}]
+    },
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "onsetDateTime": "2012-04-08"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PB-DIAG-FRACTURE-2",
+    "code": {
+      "coding": [{"system": "http://snomed.info/sct", "code": "72497001", "display": "Fracture of neck of radius"}]
+    },
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "onsetDateTime": "2012-05-02"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PB-DIAG-ASTHMA",
+    "code": {
+      "coding": [{"system": "http://snomed.info/sct", "code": "195967001", "display": "Asthma"}]
+    },
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "onsetDateTime": "2013-07-25"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PB-DIAG-HTN",
+    "code": {
+      "coding": [{"system": "http://snomed.info/sct", "code": "1201005", "display": "Essential hypertension"}]
+    },
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "onsetDateTime": "2015-06-20"
+  },
+  {
+    "resourceType": "Condition",
+    "id": "PB-DIAG-KIDNEY",
+    "code": {
+      "coding": [{"system": "http://snomed.info/sct", "code": "443820000", "display": "Disorder of kidney"}]
+    },
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "onsetDateTime": "2015-06-20"
+  },
+  {
+    "resourceType": "ExplanationOfBenefit",
+    "id": "PB-EOB-PROF-1",
+    "status": "active",
+    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional"}]},
+    "use": "claim",
+    "patient": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "total": [{"amount": {"value": 379.7}}],
+    "payment": {"amount": {"value": 73.69}}
+  },
+  {
+    "resourceType": "ExplanationOfBenefit",
+    "id": "PB-EOB-INST-1",
+    "status": "active",
+    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional"}]},
+    "use": "claim",
+    "patient": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "total": [{"amount": {"value": 64488.35}}],
+    "payment": {"amount": {"value": 15585.54}}
+  },
+  {
+    "resourceType": "ExplanationOfBenefit",
+    "id": "PB-EOB-INST-2",
+    "status": "active",
+    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional"}]},
+    "use": "claim",
+    "patient": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "total": [{"amount": {"value": 6300.35}}],
+    "payment": {"amount": {"value": 3000.54}}
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "PB-PROV-CONDITION-1",
+    "target": [{"reference": "Condition/PB-DIAG-SINUS"}],
+    "recorded": "2012-07-13T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "PB-PROV-CONDITION-2",
+    "target": [{"reference": "Condition/PB-DIAG-FRACTURE-1"}],
+    "recorded": "2012-04-09T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "PB-PROV-CONDITION-3",
+    "target": [{"reference": "Condition/PB-DIAG-FRACTURE-2"}],
+    "recorded": "2012-05-03T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "PB-PROV-CONDITION-4",
+    "target": [{"reference": "Condition/PB-DIAG-ASTHMA"}],
+    "recorded": "2013-07-26T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "PB-PROV-CONDITION-5",
+    "target": [{"reference": "Condition/PB-DIAG-HTN"}],
+    "recorded": "2015-06-21T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "PB-PROV-CONDITION-6",
+    "target": [{"reference": "Condition/PB-DIAG-KIDNEY"}],
+    "recorded": "2015-06-21T00:00:00Z",
+    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-TAG-1",
+    "status": "final",
+    "code": {"coding": [{"code": "ADT-GT1-Name"}]},
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "valueString": "Demoski, Helen"
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-TAG-2",
+    "status": "final",
+    "code": {"coding": [{"code": "ADT-GT1-Addr"}]},
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "valueString": "123 Main St, Ann Arbor, MI"
+  },
+  {
+    "resourceType": "Observation",
+    "id": "PB-OBS-TAG-3",
+    "status": "final",
+    "code": {"coding": [{"code": "ADT-GT1-Phone"}]},
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "valueString": "555-555-5555"
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-tag-1",
+    "target": [{"reference": "Observation/PB-OBS-TAG-1"}],
+    "recorded": "2016-05-23T22:02:00Z",
+    "agent": [{"who": {"display": "Platform B Guarantor Processor"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-tag-2",
+    "target": [{"reference": "Observation/PB-OBS-TAG-2"}],
+    "recorded": "2016-05-23T22:02:00Z",
+    "agent": [{"who": {"display": "Platform B Guarantor Processor"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-tag-3",
+    "target": [{"reference": "Observation/PB-OBS-TAG-3"}],
+    "recorded": "2016-05-23T22:02:00Z",
+    "agent": [{"who": {"display": "Platform B Guarantor Processor"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-006",
+    "target": [{"reference": "Observation/1.887f91945332ea11815a0a69c1b3225b"}],
+    "recorded": "2020-01-08T20:15:16Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-007",
+    "target": [{"reference": "Observation/1.4bc3b642fea9e71181330a69c1b3225b"}],
+    "recorded": "2017-10-05T18:51:58Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-008",
+    "target": [{"reference": "Observation/1.fee185f63121e61181280a69c1b3225b"}],
+    "recorded": "2012-12-04T14:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-009",
+    "target": [{"reference": "Observation/1.fde185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T14:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-010",
+    "target": [{"reference": "Observation/1.fce185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T14:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-011",
+    "target": [{"reference": "Observation/1.fbe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-06T13:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-012",
+    "target": [{"reference": "Observation/1.fae185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T13:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-013",
+    "target": [{"reference": "Observation/1.f9e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-014",
+    "target": [{"reference": "Observation/1.f8e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-015",
+    "target": [{"reference": "Observation/1.f7e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-016",
+    "target": [{"reference": "Observation/1.f6e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-017",
+    "target": [{"reference": "Observation/1.f5e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-018",
+    "target": [{"reference": "Observation/1.f4e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-019",
+    "target": [{"reference": "Observation/1.f3e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-020",
+    "target": [{"reference": "Observation/1.f2e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-021",
+    "target": [{"reference": "Observation/1.f1e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-022",
+    "target": [{"reference": "Observation/1.f0e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-023",
+    "target": [{"reference": "Observation/1.efe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-024",
+    "target": [{"reference": "Observation/1.eee185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-025",
+    "target": [{"reference": "Observation/1.ede185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-026",
+    "target": [{"reference": "Observation/1.ece185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-027",
+    "target": [{"reference": "Observation/1.ebe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-028",
+    "target": [{"reference": "Observation/1.eae185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-029",
+    "target": [{"reference": "Observation/1.e9e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-030",
+    "target": [{"reference": "Observation/1.e8e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-031",
+    "target": [{"reference": "Observation/1.e7e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-032",
+    "target": [{"reference": "Observation/1.e6e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-033",
+    "target": [{"reference": "Observation/1.e5e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-034",
+    "target": [{"reference": "Observation/1.e4e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-035",
+    "target": [{"reference": "Observation/1.e3e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-036",
+    "target": [{"reference": "Observation/1.e2e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T16:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-037",
+    "target": [{"reference": "Observation/1.e1e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T13:30:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-038",
+    "target": [{"reference": "Observation/1.e0e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T16:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-039",
+    "target": [{"reference": "Observation/1.dfe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-20T00:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-040",
+    "target": [{"reference": "Observation/1.dee185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-20T04:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-041",
+    "target": [{"reference": "Observation/1.dde185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T20:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-042",
+    "target": [{"reference": "Observation/1.dce185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T06:40:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-043",
+    "target": [{"reference": "Observation/1.dbe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-21T20:47:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-044",
+    "target": [{"reference": "Observation/1.dae185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-23T03:50:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-045",
+    "target": [{"reference": "Observation/1.d9e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T21:30:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-046",
+    "target": [{"reference": "Observation/1.d8e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T04:30:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-047",
+    "target": [{"reference": "Observation/1.d7e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-20T12:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-048",
+    "target": [{"reference": "Observation/1.d6e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-20T08:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-049",
+    "target": [{"reference": "Observation/1.d5e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T16:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-050",
+    "target": [{"reference": "Observation/1.d4e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T13:30:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-051",
+    "target": [{"reference": "Observation/1.d3e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T06:40:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-052",
+    "target": [{"reference": "Observation/1.d2e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T06:40:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-053",
+    "target": [{"reference": "Observation/1.d1e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-21T11:49:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-054",
+    "target": [{"reference": "Observation/1.d0e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-21T20:47:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-055",
+    "target": [{"reference": "Observation/1.cfe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-20T12:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-056",
+    "target": [{"reference": "Observation/1.cee185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T20:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-057",
+    "target": [{"reference": "Observation/1.cde185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T16:00:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-058",
+    "target": [{"reference": "Observation/1.cce185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T13:30:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-059",
+    "target": [{"reference": "Observation/1.cbe185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-22T14:18:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-060",
+    "target": [{"reference": "Observation/1.cae185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T09:15:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-061",
+    "target": [{"reference": "Observation/1.c9e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T06:40:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-bulk-batch-062",
+    "target": [{"reference": "Observation/1.c8e185f63121e61181280a69c1b3225b"}],
+    "recorded": "2016-05-19T07:54:00Z",
+    "agent": [{"who": {"display": "System Sync"}}]
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "id": "PB-MED-REQ-002",
+    "status": "completed",
+    "intent": "order",
+    "medicationCodeableConcept": {"coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "83156", "display": "Prevacid"}]},
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "authoredOn": "2012-09-16",
+    "requester": {"reference": "Practitioner/PLAT-B-PRAC-002"}
+  },
+  {
+    "resourceType": "MedicationRequest",
+    "id": "PB-MED-REQ-003",
+    "status": "completed",
+    "intent": "order",
+    "medicationCodeableConcept": {"coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "212549", "display": "Amlodipine"}]},
+    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
+    "authoredOn": "2012-09-16",
+    "requester": {"reference": "Practitioner/PLAT-B-PRAC-002"}
+  },
+  {
+    "resourceType": "Provenance",
+    "id": "prov-last-audit-001",
+    "target": [{"reference": "Patient/PLAT-B-DEMOSKI-50"}],
+    "recorded": "2026-03-23T12:00:00Z",
+    "agent": [{"who": {"display": "Compliance Auditor B"}}]
+  }
+]

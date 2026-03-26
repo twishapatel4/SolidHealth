@@ -3,6 +3,7 @@ import pandas as pd
 import networkx as nx
 from splink import Linker, DuckDBAPI
 import hashlib
+import uuid
 import re
 from collections import Counter
 import sys
@@ -83,17 +84,20 @@ def extract_features(data, source_name):
         patient_ref = clean_id(raw_ref)
         
         # Identity Logic (Code)
-        code = (get_val(item, "code.coding.0.code") or 
-                get_val(item, "vaccineCode.coding.0.code") or 
-                get_val(item, "type.0.coding.0.code") or 
-                get_val(item, "type.coding.0.code") or 
-                get_val(item, "category.0.coding.0.code") or 
-                get_val(item, "category.1.coding.0.code") or 
-                get_val(item, "name") or    
-                get_val(item, "class.code") or 
-                get_val(item, "medicationCodeableConcept.coding.0.code") or 
-                clean_id(get_val(item, "medicationReference.reference")) or 
-                "NOCODE")
+        if res_type == "Binary":
+            code = internal_id # Use the ID for Binaries to keep them unique
+        else:
+            code = (get_val(item, "code.coding.0.code") or 
+                    get_val(item, "vaccineCode.coding.0.code") or 
+                    get_val(item, "type.0.coding.0.code") or 
+                    get_val(item, "type.coding.0.code") or 
+                    get_val(item, "category.0.coding.0.code") or 
+                    get_val(item, "category.1.coding.0.code") or 
+                    get_val(item, "name") or    
+                    get_val(item, "class.code") or 
+                    get_val(item, "medicationCodeableConcept.coding.0.code") or 
+                    clean_id(get_val(item, "medicationReference.reference")) or 
+                    "NOCODE")
         
         # Identity Logic (Date)
         date_raw = (get_val(item, "effectiveDateTime") or 
@@ -148,7 +152,8 @@ def create_global_id_map(df_patients, df_matches):
     for _, row in df_matches.iterrows(): G.add_edge(row['linkage_id_l'], row['linkage_id_r'])
     mapping = {}
     for cluster in nx.connected_components(G):
-        unique_global_id = "PATIENT-ELIJAH-FISHER"
+        # unique_global_id = "PATIENT-ELIJAH-FISHER"
+        unique_global_id =  f"GID-{str(uuid.uuid4())[:8].upper()}"
         for lid in cluster: mapping[l_to_i[lid]] = unique_global_id
     return mapping
 
@@ -189,7 +194,7 @@ def main(file1, file2):
         def get_owner(row):
             gid = id_map.get(row['patient_ref'])
             if gid: return gid
-            if row['resourceType'] in ["Location", "Organization", "Practitioner", "Medication"]: 
+            if row['resourceType'] in ["Location", "Organization", "Practitioner", "Medication","Binary","DiagnosticReport"]: 
                 return default_gid
             return "UNKNOWN"
         df['gid'] = df.apply(get_owner, axis=1)
@@ -232,4 +237,4 @@ def main(file1, file2):
                     if status == "MODIFIED": print(f"   Change: {r['Detail']}")
 
 if __name__ == "__main__":
-    main('elijah.json', 'new_data.json')
+    main('new_data_syn.json', 'new_data.json')
