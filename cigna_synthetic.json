@@ -162,6 +162,136 @@
     "resourceType": "Patient"
   },
   {
+    "activity": [
+      {
+        "detail": {
+          "code": {
+            "coding": [
+              {
+                "code": "386294003",
+                "display": "Joint mobility exercises",
+                "system": "http://snomed.info/sct"
+              }
+            ]
+          },
+          "location": {
+            "display": "HARTFORD HOSPITAL",
+            "reference": "Location/111e29c0-9880-37e5-97b4-d9474760fbe4"
+          },
+          "status": "in-progress"
+        }
+      },
+      {
+        "detail": {
+          "code": {
+            "coding": [
+              {
+                "code": "266694003",
+                "display": "Heat therapy",
+                "system": "http://snomed.info/sct"
+              }
+            ]
+          },
+          "location": {
+            "display": "HARTFORD HOSPITAL",
+            "reference": "Location/111e29c0-9880-37e5-97b4-d9474760fbe4"
+          },
+          "status": "in-progress"
+        }
+      }
+    ],
+    "addresses": [
+      {
+        "reference": "Condition/bf55cd82-7015-2492-709d-773302894316"
+      }
+    ],
+    "author": {
+      "identifier": {
+        "system": "http://hl7.org/fhir/sid/us-npi",
+        "value": "RandValue4762237"
+      }
+    },
+    "careTeam": [
+      {
+        "reference": "CareTeam/5770571d-a5bc-3c01-6dab-f57bf41190ed"
+      }
+    ],
+    "category": [
+      {
+        "coding": [
+          {
+            "code": "assess-plan",
+            "system": "http://hl7.org/fhir/us/core/CodeSystem/careplan-category"
+          }
+        ]
+      },
+      {
+        "coding": [
+          {
+            "code": "408869004",
+            "display": "Musculoskeletal care",
+            "system": "http://snomed.info/sct"
+          }
+        ]
+      }
+    ],
+    "contributor": [
+      {
+        "display": "JUDITH BOSSE, CRNP",
+        "identifier": {
+          "system": "http://hl7.org/fhir/sid/us-npi",
+          "value": "RandValue8641181"
+        }
+      }
+    ],
+    "created": "2022-08-19T09:41:27-04:00",
+    "description": "Placeholder Description",
+    "encounter": {
+      "reference": "Encounter/90fb1d2e-60fe-53b3-5286-51b448278776"
+    },
+    "id": "9e041978-4a64-c31e-98bd-b49b8b84ebc6",
+    "identifier": [
+      {
+        "system": "https:fhir.humana.com",
+        "type": {
+          "coding": [
+            {
+              "code": "CP-DOC-ID",
+              "display": "CARE PLAN DOC ID"
+            }
+          ]
+        },
+        "value": "RandomDocID437066"
+      }
+    ],
+    "intent": "order",
+    "meta": {
+      "lastUpdated": "2022-08-19T18:39:27.918556+00:00",
+      "profile": [
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-careplan"
+      ],
+      "source": "PLACEHOLDER",
+      "versionId": "MTY2MDkzNDM2NzkxODU1NjAwMA"
+    },
+    "period": {
+      "start": "2021-11-03T01:00:00-04:00"
+    },
+    "resourceType": "CarePlan",
+    "status": "active",
+    "subject": {
+      "identifier": {
+        "system": "https://sources.cigna.com/patient/identifier/memberid/81",
+        "value": "ANCSDFEF1234567"
+      },
+      "reference": "Patient/2e897e49-61e0-4449-b470-c9909dc3ec1c",
+      "type": "Patient"
+    },
+    "text": {
+      "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Care Plan for Musculoskeletal care.<br/>Activities: <ul><li>Musculoskeletal care</li><li>Musculoskeletal care</li></ul><br/>Care plan is meant to treat Localized, primary osteoarthritis of the hand.</div>",
+      "status": "generated"
+    }
+  },
+  {
     "category": [
       "environment"
     ],

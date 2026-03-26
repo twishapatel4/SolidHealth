@@ -7,7 +7,16 @@ import uuid
 import re
 from collections import Counter
 import sys
+import base64
 
+def hash_binary_data(data):
+    if not data:
+        return None
+    try:
+        decoded = base64.b64decode(data)
+        return hashlib.sha256(decoded).hexdigest()
+    except:
+        return None
 # --- UTILS ---
 def normalize_string(s):
     if not s or s == "N/A": return "na"
@@ -29,17 +38,93 @@ def get_val(obj, path, default=None):
             return default
     return obj if obj is not None else default
 
+def normalize_system(system):
+    if not system:
+        return "unknown"
+
+    s = system.lower()
+
+    if "aetna" in s or "cigna" in s:
+        return "payer_system"
+
+    if "mrn" in s:
+        return "mrn"
+
+    if "ssn" in s:
+        return "ssn"
+
+    return s
+
+def normalize_identifier(identifier):
+    if not identifier:
+        return None
+
+    # Handle list of identifiers
+    if isinstance(identifier, list):
+        return [normalize_identifier(i) for i in identifier if i]
+
+    if not isinstance(identifier, dict):
+        return None
+
+    return {
+        # Keep semantic meaning (type)
+        "type": normalize_string(get_val(identifier, "type.coding.0.code") or "unknown"),
+
+        # Normalize system → remove platform dependency
+        "system": normalize_system(identifier.get("system")),
+
+        # Mask value → remove platform-specific IDs
+        "value": "GENERIC_ID"
+    }
+
 # --- CLINICAL HASHING LOGIC ---
 def get_clinical_essence(obj):
     noise = {
         'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
-        'url', 'system', 'fullUrl', 'identifier'
+        'url', 'fullUrl'
     }
-    if isinstance(obj, dict):
-        cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
+
+    # --- 🔴 HANDLE BINARY ---
+    if isinstance(obj, dict) and obj.get("resourceType") == "Binary":
+        return {
+            "resourceType": "Binary",
+            "contentType": obj.get("contentType"),
+            "data_hash": hash_binary_data(obj.get("data"))
+        }
+
+    # --- 🔵 HANDLE DOCUMENTREFERENCE ---
+    if isinstance(obj, dict) and obj.get("resourceType") == "DocumentReference":
+        attachment = get_val(obj, "content.0.attachment")
+
+        return {
+            "resourceType": "DocumentReference",
+            "type": normalize_string(get_val(obj, "type.coding.0.code")),
+            "category": normalize_string(get_val(obj, "category.0.coding.0.code")),
+            "date": str(obj.get("date", ""))[:16],
+            "data_hash": hash_binary_data(attachment.get("data")) if attachment and attachment.get("data") else None,
+            "url": normalize_string(attachment.get("url")) if attachment and attachment.get("url") else None,
+            "contentType": attachment.get("contentType") if attachment else None
+        }
+    elif isinstance(obj, dict):
+        cleaned = {}
+
+        for k, v in obj.items():
+            if k in noise:
+                continue
+            if k == "identifier":
+                cleaned[k] = normalize_identifier(v)
+                continue
+            if k == "system":
+                cleaned[k] = normalize_system(v)
+                continue
+            cleaned[k] = get_clinical_essence(v)
+
         return {k: v for k, v in cleaned.items() if v not in [None, "", [], {}]}
     elif isinstance(obj, list):
-        return sorted([get_clinical_essence(x) for x in obj], key=lambda x: str(x))
+        return sorted(
+            [get_clinical_essence(x) for x in obj if x is not None],
+            key=lambda x: str(x)
+        )
     elif isinstance(obj, (int, float)):
         return float(obj)
     elif isinstance(obj, str):
@@ -196,7 +281,9 @@ def main(file1, file2):
             if gid: return gid
             if row['resourceType'] in ["Location", "Organization", "Practitioner", "Medication","Binary","DiagnosticReport"]: 
                 return default_gid
-            return "UNKNOWN"
+            # return "UNKNOWN"
+            if not row['patient_ref']:
+                return f"Orphan-{row['resourceType']}"
         df['gid'] = df.apply(get_owner, axis=1)
         df['final_fp'] = df['gid'] + "|" + df['fingerprint_id']
         return df.set_index('final_fp')
@@ -237,4 +324,4 @@ def main(file1, file2):
                     if status == "MODIFIED": print(f"   Change: {r['Detail']}")
 
 if __name__ == "__main__":
-    main('new_data_syn.json', 'new_data.json')
+    main('elijah.json', 'cigna_synthetic.json')
