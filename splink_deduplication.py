@@ -204,7 +204,8 @@ def extract_features(data, source_name):
             "source": source_name,
             "resourceType": res_type,
             "patient_ref": patient_ref,
-            "clinical_id": f"{code}|{date_key}",
+            # "clinical_id": f"{code}|{date_key}",
+            "clinical_id": f"{res_type}|{code}|{date_key}|{patient_ref}",
             "payload_hash": generate_clinical_hash(item),
             "essence": essence,
             "essence_str": str(essence),
@@ -216,9 +217,23 @@ def extract_features(data, source_name):
     # --- THE SORTING FIX (Ensures 3 MODIFIED instead of 20) ---
     df = pd.DataFrame(temp_list)
     df = df.sort_values(by=['resourceType', 'clinical_id', 'essence_str'])
-    df['seq'] = df.groupby(['resourceType', 'clinical_id']).cumcount() + 1
-    df['fingerprint_id'] = df['resourceType'] + "|" + df['clinical_id'] + "|" + df['seq'].astype(str)
+    # df['seq'] = df.groupby(['resourceType', 'clinical_id']).cumcount() + 1
+    # df['fingerprint_id'] = df['resourceType'] + "|" + df['clinical_id'] + "|" + df['seq'].astype(str)
+    # df['fingerprint_id'] = df['resourceType'] + "|" + df['clinical_id'] + "|" + df['payload_hash']
+    def soft_hash(s):
+        return hashlib.md5(s.encode()).hexdigest()[:6]
 
+    df['soft_id'] = df['essence_str'].apply(soft_hash)
+
+    # df['fingerprint_id'] = (
+    #     df['resourceType'] + "|" +
+    #     df['clinical_id'] + "|" +
+    #     df['soft_id']
+    # )
+    df['fingerprint_id'] = (
+    df['resourceType'] + "|" +
+    df['clinical_id']
+    )
     return df.to_dict('records'), file_stats
 
 # --- IDENTITY RESOLUTION ---
@@ -284,9 +299,11 @@ def main(file1, file2):
             # return "UNKNOWN"
             if not row['patient_ref']:
                 return f"Orphan-{row['resourceType']}"
+            return f"Unknown-{row['patient_ref']}"
+        
         df['gid'] = df.apply(get_owner, axis=1)
         df['final_fp'] = df['gid'] + "|" + df['fingerprint_id']
-        return df.set_index('final_fp')
+        return df.set_index('final_fp')  
 
     idx1, idx2 = build_index(raw1), build_index(raw2)
     all_fps = sorted(list(set(idx1.index) | set(idx2.index)))
