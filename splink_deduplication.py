@@ -250,6 +250,24 @@ def extract_features(data, source_name):
         
         # Identity Logic
         if res_type == "Binary": code = internal_id
+        elif res_type == "Organization":
+            name = normalize_string(item.get("name"))
+
+            identifiers = item.get("identifier", [])
+            npi = None
+
+            for ident in identifiers:
+                system = normalize_system(ident.get("system"))
+                if system == "npi":
+                    npi = ident.get("value")
+                    break
+
+            # fallback if NPI missing
+            if not npi:
+                npi = "NONPI"
+
+            code = f"{npi}|{name}"
+            date_key = "STATIC"
         else:
             code = (get_val(item, "code.coding.0.code") or get_val(item, "vaccineCode.coding.0.code") or 
                     get_val(item, "type.coding.0.code") or get_val(item, "category.0.coding.0.code") or "NOCODE")
@@ -278,6 +296,11 @@ def extract_features(data, source_name):
         temp_list.append(row)
     return temp_list, file_stats
 
+def build_fp(row):
+    if row['resourceType'] == "Organization":
+        return f"{row['resourceType']}|{row['code']}"
+    else:
+        return f"{row['gid']}|{row['resourceType']}|{row['code']}|{row['date_key']}"
 # --- IDENTITY RESOLUTION (Matching Patient A to Patient B) ---
 def get_patient_matches(df_patients):
     if len(df_patients) < 2: return pd.DataFrame()
@@ -319,7 +342,8 @@ def main(file1, file2):
         df = pd.DataFrame(rows)
         df['gid'] = df['patient_ref'].map(id_map).fillna(df['internal_id'].map(id_map)).fillna(default_gid)
         # Fingerprint: GID | Type | Code | Date
-        df['fp_base'] = df['gid'] + "|" + df['resourceType'] + "|" + df['code'] + "|" + df['date_key']
+        # df['fp_base'] = df['gid'] + "|" + df['resourceType'] + "|" + df['code'] + "|" + df['date_key']
+        df['fp_base'] = df.apply(build_fp, axis=1)       
         df = df.sort_values(by=['fp_base', 'payload_hash'])
         df['seq'] = df.groupby('fp_base').cumcount() + 1
         df['final_fp'] = df['fp_base'] + "|seq-" + df['seq'].astype(str)
