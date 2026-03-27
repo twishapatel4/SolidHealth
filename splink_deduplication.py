@@ -128,6 +128,115 @@ def deep_diff(d1, d2, path=""):
             else: diffs.append(f"{path}{k}: {v1} ➔ {v2}")
     return ", ".join(diffs)
 
+def get_fhir_date(item, res_type):
+    """
+    Extracts the most clinically relevant date from a FHIR resource.
+    Returns a normalized minute-level string or 'NODATE'.
+    """
+
+    def format_date(val):
+        if not val:
+            return None
+        return str(val)[:16].upper()
+
+    # 🔵 1. Common high-priority fields (fast path)
+    common_fields = [
+        "effectiveDateTime",
+        "performedDateTime",
+        "recordedDate",
+        "issued",
+        "authoredOn",
+        "date"
+    ]
+    
+    for field in common_fields:
+        val = get_val(item, field)
+        if val:
+            return format_date(val)
+
+    # 🔵 2. Period-based fields (VERY common in FHIR)
+    period_fields = [
+        "effectivePeriod.start",
+        "performedPeriod.start",
+        "period.start"
+    ]
+
+    for field in period_fields:
+        val = get_val(item, field)
+        if val:
+            return format_date(val)
+
+    # 🔵 3. Resource-specific logic
+
+    if res_type == "Condition":
+        val = (
+            get_val(item, "onsetDateTime") or
+            get_val(item, "period.start") or
+            get_val(item, "abatementDateTime") or
+            get_val(item, "abatementPeriod.start")
+        )
+        if val:
+            return format_date(val)
+    elif res_type == "CarePlan":
+        val = get_val(item, "period.start")
+        if val:
+            return format_date(val)
+
+    elif res_type == "Observation":
+        val = (
+            get_val(item, "effectiveDateTime") or
+            get_val(item, "effectivePeriod.start") or
+            get_val(item, "issued")
+        )
+        if val:
+            return format_date(val)
+
+    elif res_type == "MedicationRequest":
+        val = get_val(item, "authoredOn")
+        if val:
+            return format_date(val)
+
+    elif res_type == "Procedure":
+        val = (
+            get_val(item, "performedDateTime") or
+            get_val(item, "performedPeriod.start")
+        )
+        if val:
+            return format_date(val)
+
+    elif res_type == "Encounter":
+        val = get_val(item, "period.start")
+        if val:
+            return format_date(val)
+
+    elif res_type == "AllergyIntolerance":
+        val = get_val(item, "recordedDate")
+        if val:
+            return format_date(val)
+
+    elif res_type == "Immunization":
+        val = get_val(item, "occurrenceDateTime")
+        if val:
+            return format_date(val)
+
+    elif res_type == "DiagnosticReport":
+        val = (
+            get_val(item, "effectiveDateTime") or
+            get_val(item, "issued")
+        )
+        if val:
+            return format_date(val)
+
+    elif res_type == "DocumentReference":
+        val = (
+            get_val(item, "date") or
+            get_val(item, "context.period.start")
+        )
+        if val:
+            return format_date(val)
+
+    # 🔴 4. Final fallback
+    return "NODATE"
 # --- STAGE 1: FEATURE EXTRACTION ---
 def extract_features(data, source_name):
     temp_list = []
@@ -145,10 +254,11 @@ def extract_features(data, source_name):
             code = (get_val(item, "code.coding.0.code") or get_val(item, "vaccineCode.coding.0.code") or 
                     get_val(item, "type.coding.0.code") or get_val(item, "category.0.coding.0.code") or "NOCODE")
         
-        date_raw = (get_val(item, "effectiveDateTime") or get_val(item, "performedDateTime") or 
-                    get_val(item, "recordedDate") or get_val(item, "date") or "NODATE")
-        date_key = str(date_raw)[:16].upper()
-
+        # date_raw = (get_val(item, "effectiveDateTime") or get_val(item, "performedDateTime") or 
+        #             get_val(item, "recordedDate") or get_val(item, "date") or "NODATE")
+        # date_key = str(date_raw)[:16].upper()
+        date_key = get_fhir_date(item, res_type)
+        
         # Demographics for Splink (Patient only)
         row = {
             "linkage_id": f"{source_name}_{internal_id}",
@@ -239,7 +349,8 @@ def main(file1, file2):
         subset = report[report["Status"] == status]
         if not subset.empty:
             print(f"\n--- {status} SAMPLE ---")
-            debug_event(subset.iloc[0]["Event"], idx1, idx2)
+            row = subset.sample(1).iloc[0]
+            debug_event(row["Event"], idx1, idx2)
 
 def parse_fp(fp):
     parts = fp.split("|")
