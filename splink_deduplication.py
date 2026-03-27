@@ -278,6 +278,13 @@ def extract_features(data, source_name):
 
             code = f"{code_val}|{signature}"
             date_key = "STATIC"
+        elif res_type == "Location":
+            name = normalize_string(item.get("name"))
+            address = normalize_string(get_val(item, "address.line.0"))
+            city = normalize_string(get_val(item, "address.city"))
+
+            code = f"{name}|{address}|{city}"
+            date_key = "STATIC"
         else:
             code = get_resource_code(item)
             date_key = get_fhir_date(item, res_type)
@@ -412,4 +419,4 @@ def debug_event(event, idx1, idx2):
         print(f"File2 Payload Hash: {idx2.loc[event]['payload_hash']}")
 
 if __name__ == "__main__":
-    main("elijah.json", "elijah_2.json")
+    main("elijah.json", "cigna_synthetic.json")
