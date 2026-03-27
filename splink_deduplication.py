@@ -12,6 +12,7 @@ import base64
 RESOURCE_CODE_PATHS = {
     "MedicationRequest": [
         "medicationCodeableConcept.coding.0.code",
+        "medicationReference.reference",
         "code.coding.0.code",
         "type.coding.0.code",
         "category.0.coding.0.code",
@@ -236,13 +237,81 @@ def get_fhir_date(item, res_type):
         val = (get_val(item, "date") or get_val(item, "context.period.start"))
         if val: return format_date(val)
 
-    return "NODATE"
+    # return "NODATE"
+    meta_date = get_val(item, "meta.lastUpdated")
+    if meta_date:
+        return format_date(meta_date)
 
 def get_medication_signature(item):
     ingredient = get_val(item, "ingredient.0.itemCodeableConcept.coding.0.code")
     form = get_val(item, "form.coding.0.code")
 
     return f"{ingredient or 'NOING'}"
+
+def get_fingerprint_components(item, res_type):
+    
+    # --- Organization ---
+    if res_type == "Organization":
+        name = normalize_string(item.get("name"))
+        npi = "NONPI"
+
+        for ident in item.get("identifier", []):
+            if normalize_system(ident.get("system")) == "npi":
+                npi = ident.get("value") or npi
+                break
+
+        return f"{npi}|{name}", "STATIC"
+
+    # --- Location ---
+    elif res_type == "Location":
+        name = normalize_string(item.get("name"))
+        address = normalize_string(get_val(item, "address.line.0"))
+        city = normalize_string(get_val(item, "address.city"))
+
+        return f"{name}|{address}|{city}", "STATIC"
+
+    # --- Medication ---
+    elif res_type == "Medication":
+        code_val = (
+            get_val(item, "code.coding.0.code") or
+            get_val(item, "code.text") or
+            "NOCODE"
+        )
+
+        signature = get_medication_signature(item)
+
+        return f"{code_val}|{signature}", "STATIC"
+
+    # --- MedicationRequest ---
+    elif res_type == "MedicationRequest":
+        med_code = (
+            get_val(item, "medicationCodeableConcept.coding.0.code") or
+            clean_id(get_val(item, "medicationReference.reference")) or
+            "NOCODE"
+        )
+
+        encounter = clean_id(get_val(item, "encounter.reference") or "NOENC")
+
+        date_key = get_fhir_date(item, res_type)
+
+        return f"{med_code}|{encounter}", date_key
+
+    # --- Encounter ---
+    elif res_type == "Encounter":
+        enc_class = get_val(item, "class.code") or "NOCLASS"
+        enc_type = get_val(item, "type.0.coding.0.code") or "NOTYPE"
+        provider = clean_id(get_val(item, "serviceProvider.reference") or "NOPROV")
+
+        date_key = get_fhir_date(item, res_type)
+
+        return f"{enc_class}|{enc_type}|{provider}", date_key
+
+    # --- Default ---
+    else:
+        code = get_resource_code(item)
+        date_key = get_fhir_date(item, res_type)
+
+        return code, date_key
 
 # --- STAGE 1: FEATURE EXTRACTION ---
 def extract_features(data, source_name):
@@ -256,38 +325,43 @@ def extract_features(data, source_name):
         internal_id = clean_id(item.get("id"))
         patient_ref = clean_id(get_val(item, "subject.reference") or get_val(item, "patient.reference") or "")
 
+        # if res_type == "Binary":
+        #     code = internal_id
+        # elif res_type == "Organization":
+        #     name = normalize_string(item.get("name"))
+        #     npi = "NONPI"
+        #     for ident in item.get("identifier", []):
+        #         if normalize_system(ident.get("system")) == "npi":
+        #             npi = ident.get("value") or npi
+        #             break
+        #     code = f"{npi}|{name}"
+        #     date_key = "NOTNEEDED"
+        # elif res_type == "Medication":
+        #     code_val = (
+        #         get_val(item, "code.coding.0.code") or
+        #         get_val(item, "code.text") or
+        #         "NOCODE"
+        #     )
+
+        #     signature = get_medication_signature(item)
+
+        #     code = f"{code_val}|{signature}"
+        #     date_key = "STATIC"
+        # elif res_type == "Location":
+        #     name = normalize_string(item.get("name"))
+        #     address = normalize_string(get_val(item, "address.line.0"))
+        #     city = normalize_string(get_val(item, "address.city"))
+
+        #     code = f"{name}|{address}|{city}"
+        #     date_key = "STATIC"
+        # else:
+        #     code = get_resource_code(item)
+        #     date_key = get_fhir_date(item, res_type)
         if res_type == "Binary":
             code = internal_id
-        elif res_type == "Organization":
-            name = normalize_string(item.get("name"))
-            npi = "NONPI"
-            for ident in item.get("identifier", []):
-                if normalize_system(ident.get("system")) == "npi":
-                    npi = ident.get("value") or npi
-                    break
-            code = f"{npi}|{name}"
-            date_key = "NOTNEEDED"
-        elif res_type == "Medication":
-            code_val = (
-                get_val(item, "code.coding.0.code") or
-                get_val(item, "code.text") or
-                "NOCODE"
-            )
-
-            signature = get_medication_signature(item)
-
-            code = f"{code_val}|{signature}"
-            date_key = "STATIC"
-        elif res_type == "Location":
-            name = normalize_string(item.get("name"))
-            address = normalize_string(get_val(item, "address.line.0"))
-            city = normalize_string(get_val(item, "address.city"))
-
-            code = f"{name}|{address}|{city}"
             date_key = "STATIC"
         else:
-            code = get_resource_code(item)
-            date_key = get_fhir_date(item, res_type)
+            code, date_key = get_fingerprint_components(item, res_type)
 
         row = {
             "linkage_id": f"{source_name}_{internal_id}",
@@ -419,4 +493,4 @@ def debug_event(event, idx1, idx2):
         print(f"File2 Payload Hash: {idx2.loc[event]['payload_hash']}")
 
 if __name__ == "__main__":
-    main("elijah.json", "cigna_synthetic.json")
+    main("elijah.json", "elijah_2.json")
