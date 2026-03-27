@@ -12760,7 +12760,7 @@
           "coding": [
             {
               "code": "387490003",
-              "display": "Nifedipine (substance) hry from cigna",
+              "display": "Nifedipine (substance)",
               "system": "http://snomed.info/sct"
             }
           ]
