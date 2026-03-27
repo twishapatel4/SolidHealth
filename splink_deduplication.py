@@ -154,4 +154,4 @@ def run_audit(file1, file2):
     return report
 
 if __name__ == "__main__":
-    run_audit("elijah.json", "cigna_synthetic.json")
+    run_audit("elijah.json", "elijah_2.json")
