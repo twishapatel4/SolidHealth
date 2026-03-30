@@ -1,4 +1,3 @@
-from duckdb import df
 import json, hashlib, re, base64, pandas as pd, networkx as nx
 from splink import Linker, DuckDBAPI
 from datetime import datetime
@@ -96,30 +95,45 @@ def debug_event(event, idx1, idx2):
 #     return str(obj).strip().lower() if isinstance(obj, str) else obj
 
 def get_clinical_essence(obj):
-    # Expanded noise to include 'system' and 'display' 
-    # (Systems like 'sources.cigna.com' vs 'sources.aetna.com' are platform noise)
+    # These fields are technical/platform-specific and should be ignored
     noise = {
         'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
-        'url', 'extension', 'fullUrl', 'batch', 'requests', 'system', 'display'
+        'url', 'extension', 'fullUrl', 'batch', 'request', 'requests', 
+        'system', 'display', 'userSelected'
     }
     
     if isinstance(obj, dict):
-        # CLINICAL FIX: If it's a coding, only care about the CODE, not the SYSTEM/DISPLAY
-        if "code" in obj and "system" in obj:
-            return obj.get("code")
-            
-        # CLINICAL FIX: If it's a reference, only care about the TYPE (Patient), not the ID
-        if "reference" in obj:
-            return obj["reference"].split('/')[0] if '/' in obj["reference"] else obj["reference"]
+        # Handle References: Keep only the resource type (e.g., 'Patient'), ignore the UUID
+        # This allows matching "Patient/abc" to "Patient/xyz"
+        if "reference" in obj and isinstance(obj["reference"], str):
+            return obj["reference"].split('/')[0]
 
-        cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
-        return {k: cleaned[k] for k in sorted(cleaned.keys()) if cleaned[k] not in [None, "", [], {}]}
+        # Clean the dictionary: Remove noise keys and nested empty values
+        cleaned = {}
+        for k, v in obj.items():
+            # Skip noise keys and metadata keys starting with '_'
+            if k not in noise and not k.startswith('_'):
+                val = get_clinical_essence(v)
+                # We check for None, empty strings/lists/dicts, but KEEP 0 or 0.0
+                if val is not None and val != "" and val != [] and val != {}:
+                    cleaned[k] = val
+        return cleaned
     
     if isinstance(obj, list):
-        # Sort lists to ensure order doesn't matter (e.g., [SNOMED, LOINC] == [LOINC, SNOMED])
-        return sorted([get_clinical_essence(x) for x in obj if x], key=lambda x: str(x))
+        # Process every item in the list and sort them
+        # Sorting is CRITICAL so that [A, B] is seen as the same as [B, A]
+        items = [get_clinical_essence(x) for x in obj if x]
+        try:
+            return sorted(items, key=lambda x: str(x))
+        except:
+            return items
+            
+    # Standardize string values to lowercase for easier matching
+    if isinstance(obj, str):
+        return obj.strip().lower()
         
-    return str(obj).strip().lower() if isinstance(obj, str) else obj
+    # Return numbers (int/float) and booleans as they are to preserve clinical values
+    return obj
 
 def extract_resource_data(item):
     res_type = item.get("resourceType")
@@ -245,19 +259,20 @@ def process_fingerprints(data_list, gid_map):
     if not data_list: return pd.DataFrame()
     df = pd.DataFrame(data_list)
     
+    # Map GID
     df["gid"] = df["patient_ref"].map(gid_map).fillna(df["internal_id"].map(gid_map)).fillna("SYSTEM")
+    
+    # FINGERPRINT: This is how we match records between files.
+    # It must NOT change when the clinical value (54.0 -> 52.0) changes.
     df["fp_base"] = df["gid"] + "|" + df["res_type"] + "|" + df["code"] + "|" + df["date_key"]
 
-    # Hybrid Identity: Use Business ID if available, otherwise use short internal ID
-    df["stable_id"] = df.apply(lambda r: f"BID-{r['business_id']}" if r['business_id'] else f"INT-{r['internal_id'][-6:]}", axis=1)
-
-    # STABLE SORTING: Sort by payload_hash so that seq-1 is always assigned to the same content
-    df = df.sort_values(["fp_base", "stable_id", "payload_hash"])
-    df["seq"] = df.groupby(["fp_base", "stable_id"]).cumcount() + 1
+    # SORTING: We sort by internal_id to keep the sequence stable.
+    # If we sorted by payload_hash here, a change in value would change the sequence number.
+    df = df.sort_values(["fp_base", "internal_id"])
+    df["seq"] = df.groupby(["fp_base"]).cumcount() + 1
     
-    df["final_fp"] = df["fp_base"] + "|" + df["stable_id"] + "|seq-" + df["seq"].astype(str)
+    df["final_fp"] = df["fp_base"] + "|seq-" + df["seq"].astype(str)
     
-    # Deduplicate fingerprints to prevent Pandas Ambiguity errors
     return df.drop_duplicates(subset=["final_fp"]).set_index("final_fp")
 
 def run_audit(file1, file2):
@@ -317,4 +332,4 @@ def run_audit(file1, file2):
     return report
 
 if __name__ == "__main__":
-    run_audit("elijah.json", "elijah_2.json")
+    run_audit("new_data.json", "new_data_2.json")

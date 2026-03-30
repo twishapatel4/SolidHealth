@@ -33946,7 +33946,7 @@
     "effectiveDateTime": "2024-02-28T08:25:00-04:00",
     "issued": "2020-02-28T08:25:00-04:00",
     "valueQuantity": {
-      "value": 52.0,
+      "value": 54.0,
       "unit": "mg/dL",
       "system": "http://unitsofmeasure.org",
       "code": "mg/dL"
@@ -57089,36 +57089,6 @@
       "source": "https://fhir.careevolution.com/Master.Adapter1.WebClient/api/fhir-r4/Binary/3.bce185f63121e61181280a69c1b3225b"
     },
     "resourceType": "Binary"
-  },
-  {
-    "active": true,
-    "endpoint": [
-      {
-        "reference": "Endpoint/1"
-      },
-      {
-        "reference": "Endpoint/3"
-      },
-      {
-        "reference": "Endpoint/5"
-      }
-    ],
-    "id": "916aca76-f7a3-e911-8149-0a69c1b3225b",
-    "identifier": [
-      {
-        "system": "urn:ietf:rfc:3986",
-        "value": "http://fhir.carevolution.com/identifiers/CareEvolution/MRN/FHIR-R4"
-      }
-    ],
-    "meta": {
-      "lastUpdated": "2019-07-11T16:18:07.367+00:00",
-      "profile": [
-        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization|3.1.1",
-        "http://hl7.org/fhir/us/carin-bb/StructureDefinition/C4BB-Organization|2.0.0"
-      ]
-    },
-    "name": "FHIR R4",
-    "resourceType": "Organization"
   },
   {
     "active": true,
