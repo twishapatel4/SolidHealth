@@ -270,6 +270,25 @@ def run_audit(file1, file2):
     idx1 = process_fingerprints(raw1, gid_map)
     idx2 = process_fingerprints(raw2, gid_map)
     
+    # --- [PATIENT IDENTITY GUARD] ---
+    # Get the sets of Global IDs present in each file
+    # We ignore "SYSTEM" (records without a patient reference) for this check
+    gids1 = set(idx1["gid"].unique()) - {"SYSTEM"}
+    gids2 = set(idx2["gid"].unique()) - {"SYSTEM"}
+    
+    # Check if there is any overlap between the two files
+    common_patients = gids1.intersection(gids2)
+    
+    if not common_patients:
+        print("\n" + "!"*50)
+        print("❌ COMPARISON ABORTED: Different Patients Detected")
+        print(f"File 1 Patient(s): {list(gids1)}")
+        print(f"File 2 Patient(s): {list(gids2)}")
+        print("Clinical logic requires at least one matching patient to proceed.")
+        print("!"*50 + "\n")
+        return None
+    # ---------------------------------
+
     results = []
     all_fps = sorted(set(idx1.index) | set(idx2.index))
     for fp in all_fps:
@@ -277,7 +296,6 @@ def run_audit(file1, file2):
         in1, in2 = fp in idx1.index, fp in idx2.index
         
         if in1 and in2:
-            # FIX: Ensure we are comparing single values, not Series
             h1 = idx1.loc[fp, "payload_hash"]
             h2 = idx2.loc[fp, "payload_hash"]
             if isinstance(h1, pd.Series): h1 = h1.iloc[0]
@@ -292,7 +310,6 @@ def run_audit(file1, file2):
     print("\n" + "="*30 + "\nAUDIT SUMMARY\n" + "="*30)
     print(report["Status"].value_counts())
     
-    # Debug modified samples
     mod_subset = report[report["Status"] == "MODIFIED"]
     if not mod_subset.empty:
         debug_event(mod_subset.iloc[0]["Event"], idx1, idx2)
@@ -300,4 +317,4 @@ def run_audit(file1, file2):
     return report
 
 if __name__ == "__main__":
-    run_audit("elijah.json", "elijah_2remove.json")
+    run_audit("elijah.json", "elijah_2.json")
