@@ -1,3 +1,4 @@
+from duckdb import df
 import json, hashlib, re, base64, pandas as pd, networkx as nx
 from splink import Linker, DuckDBAPI
 from datetime import datetime
@@ -79,7 +80,7 @@ def debug_event(event, idx1, idx2):
 
 # --- [ESSENCE & EXTRACTION] ---
 def get_clinical_essence(obj):
-    noise = {'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 'url', 'extension', 'fullUrl'}
+    noise = {'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 'url', 'extension', 'fullUrl','batch','requests'}
     if isinstance(obj, dict):
         if "reference" in obj: return {"ref_type": clean_ref(obj["reference"].split('/')[0])}
         if obj.get("resourceType") == "Binary":
@@ -101,11 +102,27 @@ def extract_resource_data(item):
     date_val = next((get_val(item, p) for p in date_paths if get_val(item, p)), "NODATE")
     
     # Clean code: if it's a reference, strip the ID
-    if "/" in str(identity_code): identity_code = clean_ref(identity_code)
+    # if "/" in str(identity_code): identity_code = clean_ref(identity_code)
 
+    # essence = get_clinical_essence(item)
+    # return {
+    #     "internal_id": clean_ref(item.get("id")),
+    #     "res_type": res_type,
+    #     "patient_ref": clean_ref(get_val(item, "subject.reference") or get_val(item, "patient.reference")),
+    #     "code": normalize(identity_code),
+    #     "date_key": normalize_date(date_val),
+    #     "essence": essence,
+    #     "payload_hash": hashlib.sha256(json.dumps(essence, sort_keys=True).encode()).hexdigest(),
+    #     "first_name": normalize(get_val(item, "name.0.given.0")),
+    #     "last_name": normalize(get_val(item, "name.0.family")),
+    #     "dob": get_val(item, "birthDate"),
+    # }
+    biz_id = get_val(item, "identifier.0.value") or get_val(item, "identifier.value")
+    
     essence = get_clinical_essence(item)
     return {
         "internal_id": clean_ref(item.get("id")),
+        "business_id": str(biz_id) if biz_id else None,
         "res_type": res_type,
         "patient_ref": clean_ref(get_val(item, "subject.reference") or get_val(item, "patient.reference")),
         "code": normalize(identity_code),
@@ -154,10 +171,20 @@ def run_audit(file1, file2):
         temp_df = pd.DataFrame(data_list)
         temp_df["gid"] = temp_df["patient_ref"].map(gid_map).fillna(temp_df["internal_id"].map(gid_map)).fillna("SYSTEM")
         temp_df["fp_base"] = temp_df["gid"] + "|" + temp_df["res_type"] + "|" + temp_df["code"] + "|" + temp_df["date_key"]
-        temp_df = temp_df.sort_values(["fp_base", "payload_hash"])
-        temp_df["seq"] = temp_df.groupby("fp_base").cumcount() + 1
-        temp_df["final_fp"] = temp_df["fp_base"] + "|seq-" + temp_df["seq"].astype(str)
-        return temp_df.set_index("final_fp")
+        # temp_df = temp_df.sort_values(["fp_base", "payload_hash"])
+        # temp_df["seq"] = temp_df.groupby("fp_base").cumcount() + 1
+        # temp_df["final_fp"] = temp_df["fp_base"] + "|seq-" + temp_df["seq"].astype(str)
+        # return temp_df.set_index("final_fp")
+        temp_df["stable_id"] = temp_df.apply(lambda r: f"BID-{r['business_id']}" if r['business_id'] else f"INT-{r['internal_id'][-6:]}", axis=1)
+
+    # STABLE SORTING: Sort by payload_hash so that seq-1 is always assigned to the same content
+        temp_df = temp_df.sort_values(["fp_base", "stable_id", "payload_hash"])
+        temp_df["seq"] = temp_df.groupby(["fp_base", "stable_id"]).cumcount() + 1
+        
+        temp_df["final_fp"] = temp_df["fp_base"] + "|" + temp_df["stable_id"] + "|seq-" + temp_df["seq"].astype(str)
+        
+        # Deduplicate fingerprints to prevent Pandas Ambiguity errors
+        return temp_df.drop_duplicates(subset=["final_fp"]).set_index("final_fp")
 
     idx1, idx2 = process_fingerprints(data1), process_fingerprints(data2)
     
@@ -185,4 +212,4 @@ def run_audit(file1, file2):
     return report
 
 if __name__ == "__main__":
-    run_audit("elijah.json", "cigna_synthetic.json")
+    run_audit("new_data.json", "new_data_syn.json")
