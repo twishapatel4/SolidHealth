@@ -79,16 +79,46 @@ def debug_event(event, idx1, idx2):
             print(f"  Diff: {deep_diff(r1['essence'], r2['essence'])}")
 
 # --- [ESSENCE & EXTRACTION] ---
+# def get_clinical_essence(obj):
+#     noise = {'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 'url', 'extension', 'fullUrl','batch','requests','system','display'}
+#     if isinstance(obj, dict):
+#         if "code" in obj and "system" in obj:
+#             return obj.get("code")
+#         if "reference" in obj: 
+#             return obj["reference"].split('/')[0] if '/' in obj["reference"] else obj["reference"]
+#             # return {"ref_type": clean_ref(obj["reference"].split('/')[0])}
+#         if obj.get("resourceType") == "Binary":
+#             return {"res": "Binary", "h": hashlib.sha256(base64.b64decode(obj.get("data", "")) or b"").hexdigest()[:10]}
+#         cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
+#         return {k: cleaned[k] for k in sorted(cleaned.keys()) if cleaned[k] not in [None, "", [], {}]}
+#     if isinstance(obj, list):
+#         return sorted([get_clinical_essence(x) for x in obj if x], key=lambda x: str(x))
+#     return str(obj).strip().lower() if isinstance(obj, str) else obj
+
 def get_clinical_essence(obj):
-    noise = {'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 'url', 'extension', 'fullUrl','batch','requests'}
+    # Expanded noise to include 'system' and 'display' 
+    # (Systems like 'sources.cigna.com' vs 'sources.aetna.com' are platform noise)
+    noise = {
+        'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
+        'url', 'extension', 'fullUrl', 'batch', 'requests', 'system', 'display'
+    }
+    
     if isinstance(obj, dict):
-        if "reference" in obj: return {"ref_type": clean_ref(obj["reference"].split('/')[0])}
-        if obj.get("resourceType") == "Binary":
-            return {"res": "Binary", "h": hashlib.sha256(base64.b64decode(obj.get("data", "")) or b"").hexdigest()[:10]}
+        # CLINICAL FIX: If it's a coding, only care about the CODE, not the SYSTEM/DISPLAY
+        if "code" in obj and "system" in obj:
+            return obj.get("code")
+            
+        # CLINICAL FIX: If it's a reference, only care about the TYPE (Patient), not the ID
+        if "reference" in obj:
+            return obj["reference"].split('/')[0] if '/' in obj["reference"] else obj["reference"]
+
         cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
         return {k: cleaned[k] for k in sorted(cleaned.keys()) if cleaned[k] not in [None, "", [], {}]}
+    
     if isinstance(obj, list):
+        # Sort lists to ensure order doesn't matter (e.g., [SNOMED, LOINC] == [LOINC, SNOMED])
         return sorted([get_clinical_essence(x) for x in obj if x], key=lambda x: str(x))
+        
     return str(obj).strip().lower() if isinstance(obj, str) else obj
 
 def extract_resource_data(item):
@@ -159,43 +189,101 @@ def get_gid_map(df):
     return mapping
 
 # --- [AUDIT ENGINE] ---
-def run_audit(file1, file2):
-    data1 = [extract_resource_data(i) for i in json.load(open(file1)) if extract_resource_data(i)]
-    data2 = [extract_resource_data(i) for i in json.load(open(file2)) if extract_resource_data(i)]
+# def run_audit(file1, file2):
+#     data1 = [extract_resource_data(i) for i in json.load(open(file1)) if extract_resource_data(i)]
+#     data2 = [extract_resource_data(i) for i in json.load(open(file2)) if extract_resource_data(i)]
     
-    df_full = pd.concat([pd.DataFrame(data1), pd.DataFrame(data2)])
-    gid_map = get_gid_map(df_full)
+#     df_full = pd.concat([pd.DataFrame(data1), pd.DataFrame(data2)])
+#     gid_map = get_gid_map(df_full)
     
-    def process_fingerprints(data_list):
-        if not data_list: return pd.DataFrame()
-        temp_df = pd.DataFrame(data_list)
-        temp_df["gid"] = temp_df["patient_ref"].map(gid_map).fillna(temp_df["internal_id"].map(gid_map)).fillna("SYSTEM")
-        temp_df["fp_base"] = temp_df["gid"] + "|" + temp_df["res_type"] + "|" + temp_df["code"] + "|" + temp_df["date_key"]
-        # temp_df = temp_df.sort_values(["fp_base", "payload_hash"])
-        # temp_df["seq"] = temp_df.groupby("fp_base").cumcount() + 1
-        # temp_df["final_fp"] = temp_df["fp_base"] + "|seq-" + temp_df["seq"].astype(str)
-        # return temp_df.set_index("final_fp")
-        temp_df["stable_id"] = temp_df.apply(lambda r: f"BID-{r['business_id']}" if r['business_id'] else f"INT-{r['internal_id'][-6:]}", axis=1)
+#     def process_fingerprints(data_list):
+#         if not data_list: return pd.DataFrame()
+#         temp_df = pd.DataFrame(data_list)
+#         temp_df["gid"] = temp_df["patient_ref"].map(gid_map).fillna(temp_df["internal_id"].map(gid_map)).fillna("SYSTEM")
+#         temp_df["fp_base"] = temp_df["gid"] + "|" + temp_df["res_type"] + "|" + temp_df["code"] + "|" + temp_df["date_key"]
+#         # temp_df = temp_df.sort_values(["fp_base", "payload_hash"])
+#         # temp_df["seq"] = temp_df.groupby("fp_base").cumcount() + 1
+#         # temp_df["final_fp"] = temp_df["fp_base"] + "|seq-" + temp_df["seq"].astype(str)
+#         # return temp_df.set_index("final_fp")
+#         temp_df["stable_id"] = temp_df.apply(lambda r: f"BID-{r['business_id']}" if r['business_id'] else f"INT-{r['internal_id'][-6:]}", axis=1)
+
+#     # STABLE SORTING: Sort by payload_hash so that seq-1 is always assigned to the same content
+#         temp_df = temp_df.sort_values(["fp_base", "stable_id", "payload_hash"])
+#         temp_df["seq"] = temp_df.groupby(["fp_base", "stable_id"]).cumcount() + 1
+        
+#         temp_df["final_fp"] = temp_df["fp_base"] + "|" + temp_df["stable_id"] + "|seq-" + temp_df["seq"].astype(str)
+        
+#         # Deduplicate fingerprints to prevent Pandas Ambiguity errors
+#         return temp_df.drop_duplicates(subset=["final_fp"]).set_index("final_fp")
+
+#     idx1, idx2 = process_fingerprints(data1), process_fingerprints(data2)
+    
+#     results = []
+#     all_fps = sorted(set(idx1.index) | set(idx2.index))
+#     for fp in all_fps:
+#         if "|Patient|" in fp: continue
+#         in1, in2 = fp in idx1.index, fp in idx2.index
+#         if in1 and in2:
+#             r1, r2 = idx1.loc[fp], idx2.loc[fp]
+#             status = "UNCHANGED" if r1["payload_hash"] == r2["payload_hash"] else "MODIFIED"
+#             results.append({"Event": fp, "Status": status})
+#         else:
+#             results.append({"Event": fp, "Status": "REMOVED" if in1 else "ADDED"})
+
+#     report = pd.DataFrame(results)
+#     print("\n" + "="*30 + "\nAUDIT SUMMARY\n" + "="*30)
+#     print(report["Status"].value_counts())
+    
+#     for status in ["MODIFIED", "UNCHANGED", "ADDED"]:
+#         subset = report[report["Status"] == status]
+#         if not subset.empty:
+#             print(f"\n--- {status} SAMPLE ---")
+#             debug_event(subset.iloc[0]["Event"], idx1, idx2)
+#     return report
+
+def process_fingerprints(data_list, gid_map):
+    if not data_list: return pd.DataFrame()
+    df = pd.DataFrame(data_list)
+    
+    df["gid"] = df["patient_ref"].map(gid_map).fillna(df["internal_id"].map(gid_map)).fillna("SYSTEM")
+    df["fp_base"] = df["gid"] + "|" + df["res_type"] + "|" + df["code"] + "|" + df["date_key"]
+
+    # Hybrid Identity: Use Business ID if available, otherwise use short internal ID
+    df["stable_id"] = df.apply(lambda r: f"BID-{r['business_id']}" if r['business_id'] else f"INT-{r['internal_id'][-6:]}", axis=1)
 
     # STABLE SORTING: Sort by payload_hash so that seq-1 is always assigned to the same content
-        temp_df = temp_df.sort_values(["fp_base", "stable_id", "payload_hash"])
-        temp_df["seq"] = temp_df.groupby(["fp_base", "stable_id"]).cumcount() + 1
-        
-        temp_df["final_fp"] = temp_df["fp_base"] + "|" + temp_df["stable_id"] + "|seq-" + temp_df["seq"].astype(str)
-        
-        # Deduplicate fingerprints to prevent Pandas Ambiguity errors
-        return temp_df.drop_duplicates(subset=["final_fp"]).set_index("final_fp")
+    df = df.sort_values(["fp_base", "stable_id", "payload_hash"])
+    df["seq"] = df.groupby(["fp_base", "stable_id"]).cumcount() + 1
+    
+    df["final_fp"] = df["fp_base"] + "|" + df["stable_id"] + "|seq-" + df["seq"].astype(str)
+    
+    # Deduplicate fingerprints to prevent Pandas Ambiguity errors
+    return df.drop_duplicates(subset=["final_fp"]).set_index("final_fp")
 
-    idx1, idx2 = process_fingerprints(data1), process_fingerprints(data2)
+def run_audit(file1, file2):
+    raw1 = [extract_resource_data(i) for i in json.load(open(file1)) if extract_resource_data(i)]
+    raw2 = [extract_resource_data(i) for i in json.load(open(file2)) if extract_resource_data(i)]
+    
+    df_full = pd.concat([pd.DataFrame(raw1), pd.DataFrame(raw2)])
+    gid_map = get_gid_map(df_full)
+    
+    idx1 = process_fingerprints(raw1, gid_map)
+    idx2 = process_fingerprints(raw2, gid_map)
     
     results = []
     all_fps = sorted(set(idx1.index) | set(idx2.index))
     for fp in all_fps:
         if "|Patient|" in fp: continue
         in1, in2 = fp in idx1.index, fp in idx2.index
+        
         if in1 and in2:
-            r1, r2 = idx1.loc[fp], idx2.loc[fp]
-            status = "UNCHANGED" if r1["payload_hash"] == r2["payload_hash"] else "MODIFIED"
+            # FIX: Ensure we are comparing single values, not Series
+            h1 = idx1.loc[fp, "payload_hash"]
+            h2 = idx2.loc[fp, "payload_hash"]
+            if isinstance(h1, pd.Series): h1 = h1.iloc[0]
+            if isinstance(h2, pd.Series): h2 = h2.iloc[0]
+            
+            status = "UNCHANGED" if h1 == h2 else "MODIFIED"
             results.append({"Event": fp, "Status": status})
         else:
             results.append({"Event": fp, "Status": "REMOVED" if in1 else "ADDED"})
@@ -204,12 +292,12 @@ def run_audit(file1, file2):
     print("\n" + "="*30 + "\nAUDIT SUMMARY\n" + "="*30)
     print(report["Status"].value_counts())
     
-    for status in ["MODIFIED", "UNCHANGED", "ADDED"]:
-        subset = report[report["Status"] == status]
-        if not subset.empty:
-            print(f"\n--- {status} SAMPLE ---")
-            debug_event(subset.iloc[0]["Event"], idx1, idx2)
+    # Debug modified samples
+    mod_subset = report[report["Status"] == "MODIFIED"]
+    if not mod_subset.empty:
+        debug_event(mod_subset.iloc[0]["Event"], idx1, idx2)
+        
     return report
 
 if __name__ == "__main__":
-    run_audit("new_data.json", "new_data_syn.json")
+    run_audit("elijah.json", "elijah_2remove.json")
