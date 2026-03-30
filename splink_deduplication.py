@@ -95,44 +95,57 @@ def debug_event(event, idx1, idx2):
 #     return str(obj).strip().lower() if isinstance(obj, str) else obj
 
 def get_clinical_essence(obj):
-    # These fields are technical/platform-specific and should be ignored
+    # 1. Platform Noise: These are structural/provider-specific and should be ignored.
+    # IMPORTANT: We removed 'extension' and 'system' from here so we can see the data inside.
     noise = {
-        'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 
-        'url', 'extension', 'fullUrl', 'batch', 'request', 'requests', 
-        'system', 'display', 'userSelected'
+        'id', 'meta', 'text', 'fullUrl', 'url', 'display', 
+        'userSelected', 'versionId', 'lastUpdated', 'fullUrl'
     }
     
     if isinstance(obj, dict):
-        # Handle References: Keep only the resource type (e.g., 'Patient'), ignore the UUID
-        # This allows matching "Patient/abc" to "Patient/xyz"
+        # 2. Normalize References: Match "Practitioner/123" with "Practitioner/abc"
+        # We only care that a 'Practitioner' was involved, not the provider's internal ID.
         if "reference" in obj and isinstance(obj["reference"], str):
             return obj["reference"].split('/')[0]
 
-        # Clean the dictionary: Remove noise keys and nested empty values
         cleaned = {}
         for k, v in obj.items():
-            # Skip noise keys and metadata keys starting with '_'
-            if k not in noise and not k.startswith('_'):
-                val = get_clinical_essence(v)
-                # We check for None, empty strings/lists/dicts, but KEEP 0 or 0.0
-                if val is not None and val != "" and val != [] and val != {}:
-                    cleaned[k] = val
+            if k in noise:
+                continue
+            
+            # Recurse deep into the structure
+            val = get_clinical_essence(v)
+            
+            if val is not None and val != "" and val != [] and val != {}:
+                # 3. Numeric Normalization (The 52 -> 54 fix)
+                # Force all numbers to floats so 52 == 52.0
+                if isinstance(val, (int, float)):
+                    val = float(val)
+                
+                # 4. Collapse "Coding" objects to just the code
+                # This merges Aetna's local code structure with Cigna's
+                if k == 'coding' and isinstance(val, list):
+                    # Just return the list of codes found in the codings
+                    return [c.get('code') for c in val if isinstance(c, dict) and 'code' in c]
+
+                cleaned[k] = val
         return cleaned
     
     if isinstance(obj, list):
-        # Process every item in the list and sort them
-        # Sorting is CRITICAL so that [A, B] is seen as the same as [B, A]
-        items = [get_clinical_essence(x) for x in obj if x]
+        # Clean every item in the list
+        items = [get_clinical_essence(x) for x in obj if x is not None]
+        # Remove empty items resulting from the noise filter
+        items = [i for i in items if i != {} and i != [] and i != ""]
         try:
+            # Sort the list so that order doesn't change the hash (Structure independence)
             return sorted(items, key=lambda x: str(x))
         except:
             return items
             
-    # Standardize string values to lowercase for easier matching
+    # Normalize strings to prevent "Glucose" vs "glucose" mismatches
     if isinstance(obj, str):
         return obj.strip().lower()
         
-    # Return numbers (int/float) and booleans as they are to preserve clinical values
     return obj
 
 def extract_resource_data(item):
