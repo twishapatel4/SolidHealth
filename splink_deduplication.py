@@ -46,7 +46,8 @@ def normalize_date(date_str):
         # Strip timezone offsets for comparison stability
         clean_ts = re.sub(r'([+-]\d{2}:\d{2}|Z)$', '', str(date_str))
         dt = datetime.fromisoformat(clean_ts[:19])
-        return dt.strftime("%Y-%m-%dT%H:%M")
+        # return dt.strftime("%Y-%m-%dT%H:%M")
+        return str(date_str)[:10]
     except:
         return str(date_str)[:10] # Fallback to Day level if parsing fails
 
