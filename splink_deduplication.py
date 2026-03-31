@@ -51,19 +51,36 @@ def normalize_date(date_str):
         return str(date_str)[:10] # Fallback to Day level if parsing fails
 
 # --- [DIFFING & DEBUGGING] ---
-def deep_diff(d1, d2, path=""):
+def deep_clinical_diff(d1, d2, path=""):
+    """
+    Recursively finds differences between two 'Essence' dictionaries.
+    Because we use 'Essence', noise like IDs and Meta are already gone.
+    """
     if not isinstance(d1, dict) or not isinstance(d2, dict):
-        return f"{d1} ➔ {d2}"
+        # If one is a list, normalize to string for comparison
+        return f"{d1} ➔ {d2}" if d1 != d2 else None
+
     diffs = []
+    # Check all keys from both versions of the clinical essence
     for k in (set(d1.keys()) | set(d2.keys())):
         v1, v2 = d1.get(k), d2.get(k)
+        
         if v1 != v2:
+            current_path = f"{path}.{k}" if path else k
+            
+            # If both are dictionaries, go deeper
             if isinstance(v1, dict) and isinstance(v2, dict):
-                sub = deep_diff(v1, v2, f"{path}{k}.")
-                if sub: diffs.append(sub)
+                sub_diffs = deep_clinical_diff(v1, v2, current_path)
+                if sub_diffs:
+                    diffs.append(sub_diffs)
+            # If they are lists (like multiple codings or instructions)
+            elif isinstance(v1, list) and isinstance(v2, list):
+                diffs.append(f"{current_path}: {v1} ➔ {v2}")
+            # Base case: Value change (e.g., status: 'active' -> 'completed')
             else:
-                diffs.append(f"{path}{k}: {v1} ➔ {v2}")
-    return ", ".join(diffs)
+                diffs.append(f"{current_path}: [{v1}] ➔ [{v2}]")
+                
+    return ", ".join(filter(None, diffs))
 
 def debug_event(event, idx1, idx2):
     print(f"\n🔍 DEBUGGING EVENT: {event}")
@@ -75,75 +92,71 @@ def debug_event(event, idx1, idx2):
         if r1["payload_hash"] == r2["payload_hash"]: print("  Result: UNCHANGED")
         else:
             print("  Result: MODIFIED")
-            print(f"  Diff: {deep_diff(r1['essence'], r2['essence'])}")
-
-# --- [ESSENCE & EXTRACTION] ---
-# def get_clinical_essence(obj):
-#     noise = {'id', 'meta', 'text', 'reference', 'lastUpdated', 'versionId', 'url', 'extension', 'fullUrl','batch','requests','system','display'}
-#     if isinstance(obj, dict):
-#         if "code" in obj and "system" in obj:
-#             return obj.get("code")
-#         if "reference" in obj: 
-#             return obj["reference"].split('/')[0] if '/' in obj["reference"] else obj["reference"]
-#             # return {"ref_type": clean_ref(obj["reference"].split('/')[0])}
-#         if obj.get("resourceType") == "Binary":
-#             return {"res": "Binary", "h": hashlib.sha256(base64.b64decode(obj.get("data", "")) or b"").hexdigest()[:10]}
-#         cleaned = {k: get_clinical_essence(v) for k, v in obj.items() if k not in noise}
-#         return {k: cleaned[k] for k in sorted(cleaned.keys()) if cleaned[k] not in [None, "", [], {}]}
-#     if isinstance(obj, list):
-#         return sorted([get_clinical_essence(x) for x in obj if x], key=lambda x: str(x))
-#     return str(obj).strip().lower() if isinstance(obj, str) else obj
+            print(f"  Diff: {deep_clinical_diff(r1['essence'], r2['essence'])}")
 
 def get_clinical_essence(obj):
-    # 1. Platform Noise: These are structural/provider-specific and should be ignored.
-    # IMPORTANT: We removed 'extension' and 'system' from here so we can see the data inside.
-    noise = {
-        'id', 'meta', 'text', 'fullUrl', 'url', 'display', 
-        'userSelected', 'versionId', 'lastUpdated', 'fullUrl'
+    # Strictly technical noise that never contains clinical value
+    nuke_keys = {
+        'id', 'meta', 'text', 'fullUrl', 'url',
+        'userSelected', 'versionId', 'lastUpdated',
+        'assigner', 'period', 'use' 
     }
     
     if isinstance(obj, dict):
-        # 2. Normalize References: Match "Practitioner/123" with "Practitioner/abc"
-        # We only care that a 'Practitioner' was involved, not the provider's internal ID.
-        if "reference" in obj and isinstance(obj["reference"], str):
-            return obj["reference"].split('/')[0]
+        # 1. SPECIAL CASE: Binary Content
+        # Hash the actual data so we detect if the PDF/File changed
+        if obj.get("resourceType") == "Binary" and "data" in obj:
+            return hashlib.sha256(str(obj["data"]).encode()).hexdigest()[:10]
 
+        # 2. SPECIAL CASE: Identifiers
+        # Ignore the 'system' URL (Aetna vs Humana), keep the clinical value
+        if "value" in obj and ("system" in obj or "type" in obj):
+            return str(obj["value"]).strip().lower()
+
+        # 3. SPECIAL CASE: References with Displays (e.g., Locations)
+        # We keep 'Location' and the 'Name', but ignore the UUID
+        if "display" in obj and "reference" in obj:
+            ref_type = str(obj["reference"]).split('/')[0]
+            clean_display = re.sub(r'[^a-z0-9]', '', str(obj["display"]).lower())
+            return f"{ref_type}:{clean_display}"
+
+        # 4. SPECIAL CASE: Simple References
+        # Keep 'Practitioner', lose 'abc-123-uuid'
+        if "reference" in obj and isinstance(obj["reference"], str):
+            return obj["reference"].split('/')[0].lower()
+
+        # 5. SPECIAL CASE: Codings
+        # Merge system (shortened) and code: 'loinc|1234-5'
+        if "code" in obj and "system" in obj:
+            sys = str(obj["system"]).split('/')[-1].split(':')[-1]
+            return f"{sys}|{obj['code']}".lower()
+
+        # General Recursion for other clinical fields
         cleaned = {}
         for k, v in obj.items():
-            if k in noise:
+            if k in nuke_keys: 
                 continue
             
-            # Recurse deep into the structure
             val = get_clinical_essence(v)
-            
             if val is not None and val != "" and val != [] and val != {}:
-                # 3. Numeric Normalization (The 52 -> 54 fix)
-                # Force all numbers to floats so 52 == 52.0
+                # Numeric Stability (52 vs 52.0)
                 if isinstance(val, (int, float)):
-                    val = float(val)
-                
-                # 4. Collapse "Coding" objects to just the code
-                # This merges Aetna's local code structure with Cigna's
-                if k == 'coding' and isinstance(val, list):
-                    # Just return the list of codes found in the codings
-                    return [c.get('code') for c in val if isinstance(c, dict) and 'code' in c]
-
+                    val = round(float(val), 4)
                 cleaned[k] = val
         return cleaned
     
     if isinstance(obj, list):
-        # Clean every item in the list
         items = [get_clinical_essence(x) for x in obj if x is not None]
-        # Remove empty items resulting from the noise filter
         items = [i for i in items if i != {} and i != [] and i != ""]
         try:
-            # Sort the list so that order doesn't change the hash (Structure independence)
             return sorted(items, key=lambda x: str(x))
         except:
             return items
             
-    # Normalize strings to prevent "Glucose" vs "glucose" mismatches
     if isinstance(obj, str):
+        # Only strip as a URL if it actually looks like a URL
+        if obj.startswith('http://') or obj.startswith('https://'):
+            return obj.split('/')[-1].lower()
         return obj.strip().lower()
         
     return obj
@@ -152,28 +165,16 @@ def extract_resource_data(item):
     res_type = item.get("resourceType")
     if res_type in ["Provenance", None]: return None
     
+    if res_type == "Binary":
+        identity_code = "FILE"
+        date_val = "STATIC"
+    
     code_paths, date_paths = RESOURCE_MAP.get(res_type, DEFAULT_PATHS)
     
     # Logic: Find the first path that returns a non-null value
     identity_code = next((get_val(item, p) for p in code_paths if get_val(item, p)), "NOCODE")
     date_val = next((get_val(item, p) for p in date_paths if get_val(item, p)), "NODATE")
     
-    # Clean code: if it's a reference, strip the ID
-    # if "/" in str(identity_code): identity_code = clean_ref(identity_code)
-
-    # essence = get_clinical_essence(item)
-    # return {
-    #     "internal_id": clean_ref(item.get("id")),
-    #     "res_type": res_type,
-    #     "patient_ref": clean_ref(get_val(item, "subject.reference") or get_val(item, "patient.reference")),
-    #     "code": normalize(identity_code),
-    #     "date_key": normalize_date(date_val),
-    #     "essence": essence,
-    #     "payload_hash": hashlib.sha256(json.dumps(essence, sort_keys=True).encode()).hexdigest(),
-    #     "first_name": normalize(get_val(item, "name.0.given.0")),
-    #     "last_name": normalize(get_val(item, "name.0.family")),
-    #     "dob": get_val(item, "birthDate"),
-    # }
     biz_id = get_val(item, "identifier.0.value") or get_val(item, "identifier.value")
     
     essence = get_clinical_essence(item)
@@ -292,4 +293,4 @@ def run_audit(file1, file2):
     return report
 
 if __name__ == "__main__":
-    run_audit("elijah.json", "cigna_synthetic.json")
+    run_audit("elijah_2remove.json", "elijah.json")
