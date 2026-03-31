@@ -118,7 +118,7 @@ def get_clinical_essence(obj):
     nuke_keys = {
         'id', 'meta', 'text', 'fullUrl', 'url',
         'userSelected', 'versionId', 'lastUpdated',
-        'assigner', 'period', 'use' 
+        'assigner', 'period', 'use' ,'identifier','batch','masterIdentifier'
     }
     
     if isinstance(obj, dict):
@@ -310,9 +310,15 @@ def run_audit(file1, file2):
     
     mod_subset = report[report["Status"] == "MODIFIED"]
     if not mod_subset.empty:
-        debug_event(mod_subset.iloc[0]["Event"], idx1, idx2)
+        # debug_event(mod_subset.iloc[0]["Event"], idx1, idx2)
+        num_samples = min(len(mod_subset), 3)
+        random_samples = mod_subset.sample(n=num_samples)
+        
+        print(f"\n🎲 Inspecting {num_samples} random MODIFIED records:")
+        for _, row in random_samples.iterrows():
+            debug_event(row["Event"], idx1, idx2)
         
     return report
 
 if __name__ == "__main__":
-    run_audit("elijah_2remove.json", "elijah.json")
+    run_audit("elijah.json", "cigna_synthetic.json")
