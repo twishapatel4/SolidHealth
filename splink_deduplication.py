@@ -94,8 +94,26 @@ def debug_event(event, idx1, idx2):
             print("  Result: MODIFIED")
             print(f"  Diff: {deep_clinical_diff(r1['essence'], r2['essence'])}")
 
+def normalize_clinical_unit(u):
+    """Normalizes units to be platform independent."""
+    if not u: return ""
+    # Remove all non-alphanumeric characters and lowercase
+    # e.g., "mg/dL" -> "mgdl", "Milligrams / Deciliter" -> "milligramsdeciliter"
+    u = re.sub(r'[^a-z0-9]', '', str(u).lower())
+    
+    # Common Synonym Mapping
+    synonyms = {
+        "milligramperdeciliter": "mgdl",
+        "milliliter": "ml",
+        "millilitre": "ml",
+        "beatsperminute": "bpm",
+        "countpermin": "bpm",
+        "percent": "pct"
+    }
+    return synonyms.get(u, u)
+
 def get_clinical_essence(obj):
-    # Strictly technical noise that never contains clinical value
+    # Technical noise to ignore
     nuke_keys = {
         'id', 'meta', 'text', 'fullUrl', 'url',
         'userSelected', 'versionId', 'lastUpdated',
@@ -103,45 +121,43 @@ def get_clinical_essence(obj):
     }
     
     if isinstance(obj, dict):
-        # 1. SPECIAL CASE: Binary Content
-        # Hash the actual data so we detect if the PDF/File changed
+        # 1. Binary Content (Hash actual data)
         if obj.get("resourceType") == "Binary" and "data" in obj:
             return hashlib.sha256(str(obj["data"]).encode()).hexdigest()[:10]
 
-        # 2. SPECIAL CASE: Identifiers
-        # Ignore the 'system' URL (Aetna vs Humana), keep the clinical value
-        if "value" in obj and ("system" in obj or "type" in obj):
-            return str(obj["value"]).strip().lower()
+        # 2. Quantity Handling (Value + Unit)
+        # We must return this BEFORE the "Coding" check to avoid losing the numeric value
+        if "value" in obj and ("unit" in obj or "code" in obj):
+            val = round(float(obj["value"]), 4) if obj["value"] is not None else 0
+            # Normalize the unit string
+            unit_raw = obj.get("unit") or obj.get("code") or ""
+            unit_clean = re.sub(r'[^a-z0-9]', '', str(unit_raw).lower())
+            return f"{val}{unit_clean}"
 
-        # 3. SPECIAL CASE: References with Displays (e.g., Locations)
-        # We keep 'Location' and the 'Name', but ignore the UUID
-        if "display" in obj and "reference" in obj:
-            ref_type = str(obj["reference"]).split('/')[0]
-            clean_display = re.sub(r'[^a-z0-9]', '', str(obj["display"]).lower())
-            return f"{ref_type}:{clean_display}"
+        # 3. Identifiers (Value + Short System)
+        if "value" in obj and "system" in obj:
+            sys_short = str(obj["system"]).split('/')[-1].split(':')[-1]
+            return f"{sys_short}|{obj['value']}".lower()
 
-        # 4. SPECIAL CASE: Simple References
-        # Keep 'Practitioner', lose 'abc-123-uuid'
-        if "reference" in obj and isinstance(obj["reference"], str):
-            return obj["reference"].split('/')[0].lower()
+        # 4. References (Type + Display Name)
+        if "reference" in obj:
+            ref_type = str(obj["reference"]).split('/')[0].lower()
+            if "display" in obj:
+                clean_display = re.sub(r'[^a-z0-9]', '', str(obj["display"]).lower())
+                return f"{ref_type}:{clean_display}"
+            return ref_type
 
-        # 5. SPECIAL CASE: Codings
-        # Merge system (shortened) and code: 'loinc|1234-5'
+        # 5. Codings (System + Code)
         if "code" in obj and "system" in obj:
-            sys = str(obj["system"]).split('/')[-1].split(':')[-1]
-            return f"{sys}|{obj['code']}".lower()
+            sys_short = str(obj["system"]).split('/')[-1].split(':')[-1]
+            return f"{sys_short}|{obj['code']}".lower()
 
-        # General Recursion for other clinical fields
+        # General Recursion
         cleaned = {}
         for k, v in obj.items():
-            if k in nuke_keys: 
-                continue
-            
+            if k in nuke_keys: continue
             val = get_clinical_essence(v)
             if val is not None and val != "" and val != [] and val != {}:
-                # Numeric Stability (52 vs 52.0)
-                if isinstance(val, (int, float)):
-                    val = round(float(val), 4)
                 cleaned[k] = val
         return cleaned
     
@@ -154,7 +170,12 @@ def get_clinical_essence(obj):
             return items
             
     if isinstance(obj, str):
-        # Only strip as a URL if it actually looks like a URL
+        # 6. Date/Time Rounding (The YYYY-MM-DD Fix)
+        # Matches 2023-01-01... and returns just 2023-01-01
+        if re.match(r'^\d{4}-\d{2}-\d{2}', obj):
+            return obj[:10]
+            
+        # URL stripping for remaining strings
         if obj.startswith('http://') or obj.startswith('https://'):
             return obj.split('/')[-1].lower()
         return obj.strip().lower()

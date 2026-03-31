@@ -13231,7 +13231,7 @@
     },
     "performedDateTime": "2017-06-22T02:27:10-04:00",
     "resourceType": "Procedure",
-    "status": "completed",
+    "status": "ongoing",
     "subject": {
       "reference": "Patient/2e897e49-61e0-4449-b470-c9909dc3ec1c"
     }
@@ -15415,7 +15415,7 @@
       ],
       "versionId": "MTY2MDkzNDM3MjQzMDQ2MDAwMA"
     },
-    "name": "CONCENTRA URGENT CARE - EAST HARTFORD- new organization",
+    "name": "CONCENTRA URGENT CARE - EAST HARTFORD",
     "position": {
       "latitude": 41.7654471,
       "longitude": -72.646953
@@ -15535,7 +15535,7 @@
       ],
       "versionId": "MTY2MDkzNDM3MjQzNzc0MjAwMA"
     },
-    "name": "HARTFORD HOSPITAL",
+    "name": "HARTFORD HOSPITAL-new org",
     "position": {
       "latitude": 41.765933000000004,
       "longitude": -72.681579
@@ -15584,7 +15584,7 @@
             }
           ]
         },
-        "value": "17032837"
+        "value": "170328372345"
       }
     ],
     "ingredient": [
@@ -15593,7 +15593,7 @@
           "coding": [
             {
               "code": "387490003",
-              "display": "Nifedipine (substance)",
+              "display": "Nifedipine (substance) from code 2",
               "system": "http://snomed.info/sct"
             }
           ]
@@ -15636,7 +15636,7 @@
           "system": "http://www.nlm.nih.gov/research/umls/rxnorm"
         }
       ],
-      "text": "Naproxen sodium 220 MG Oral Tablet"
+      "text": "Naproxen sodium 220 MG Oral Tablet-ORal"
     },
     "form": {
       "coding": [
@@ -15654,7 +15654,7 @@
         "type": {
           "coding": [
             {
-              "code": "MDCTN-DOC-ID AFCCs",
+              "code": "MDCTN-DOC-ID",
               "display": "MEDICATION DOC ID"
             }
           ]
@@ -15667,7 +15667,7 @@
         "itemCodeableConcept": {
           "coding": [
             {
-              "code": "3874900033526",
+              "code": "387490003",
               "display": "Nifedipine (substance) from file 2",
               "system": "http://snomed.info/sct"
             }
@@ -15676,7 +15676,7 @@
       }
     ],
     "meta": {
-      "lastUpdated": "2022-08-19T18:39:31.290277+00:00adfb",
+      "lastUpdated": "2022-08-19T18:39:31.290277+00:00",
       "profile": [
         "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication"
       ],
@@ -15694,7 +15694,7 @@
           "code": "DESTINATION_CDR_IOR"
         }
       ],
-      "versionId": "MTY2MDkzNDM3MTI5MDI3NzAwMAaddddddddddddf"
+      "versionId": "MTY2MDkzNDM3MTI5MDI3NzAwMAasdsfge"
     },
     "resourceType": "Medication",
     "status": "active"
