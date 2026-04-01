@@ -5,18 +5,20 @@ from datetime import datetime
 # --- [CONFIG & REGISTRY] ---
 # Expanded to look deeper into arrays and alternate fields
 RESOURCE_MAP = {
-    "Observation":        (["code.coding.0.code", "code.coding.1.code", "code.text"], ["effectiveDateTime", "issued"]),
-    "MedicationRequest":  (["medicationCodeableConcept.coding.0.code", "medicationCodeableConcept.text", "medicationReference.reference"], ["authoredOn"]),
-    "Condition":          (["code.coding.0.code", "code.coding.1.code", "code.text"], ["onsetDateTime", "recordedDate"]),
+    "Observation":        (["code.coding.0.code", "code.coding.1.code", "code.text"], ["effectiveDateTime"]),
+    "MedicationRequest":  (["medicationCodeableConcept.coding.0.code", "medicationCodeableConcept.text"], ["authoredOn"]),
+    "Condition":          (["code.coding.0.code", "code.coding.1.code", "code.text"], ["onsetDateTime"]),
     "Procedure":          (["code.coding.0.code", "code.text"], ["performedDateTime", "performedPeriod.start"]),
     "Immunization":       (["vaccineCode.coding.0.code", "code.text"], ["occurrenceDateTime"]),
     "Encounter":          (["type.0.coding.0.code", "class.code"], ["period.start"]),
     "Organization":       (["identifier.0.value", "name"], ["STATIC"]),
     "Location":           (["name", "address.city"], ["STATIC"]),
     "Medication":         (["code.coding.0.code", "ingredient.0.itemCodeableConcept.coding.0.code"], ["STATIC"]),
-    "Binary":             (["id"], ["STATIC"]),
-    "Claim":              (["identifier.0.value", "type.coding.0.code"], ["billablePeriod.start"]),
-    "ExplanationOfBenefit": (["identifier.0.value", "type.coding.0.code"], ["created"]),
+    "Binary":             (["contentType", "STATIC"], ["STATIC"]),
+    "DocumentReference":  (["type.coding.0.code", "category.0.coding.0.code"], ["date"]),
+    "Claim":              (["type.coding.0.code"], ["billablePeriod.start"]),
+    "CarePlan":           (["category.0.coding.0.code", "category.0.text", "STATIC"], ["period.start"]),
+    "ExplanationOfBenefit": (["type.coding.0.code"], ["billablePeriod.start", "item.0.servicedDate"]),
 }
 DEFAULT_PATHS = (["code.coding.0.code", "identifier.0.value"], ["date", "meta.lastUpdated"])
 
@@ -152,7 +154,18 @@ def get_clinical_essence(obj):
         if "code" in obj and "system" in obj:
             sys_short = str(obj["system"]).split('/')[-1].split(':')[-1]
             return f"{sys_short}|{obj['code']}".lower()
-
+        
+        if "city" in obj or "postalCode" in obj or "line" in obj:
+            cleaned_addr = {}
+            for k, v in obj.items():
+                if k in ['use', 'id', 'extension']: continue # Ignore technical address metadata
+                # Remove spaces and punctuation from address parts
+                # "80 SEYMOUR STREET" -> "80seymourstreet"
+                if isinstance(v, str):
+                    cleaned_addr[k] = re.sub(r'[^a-z0-9]', '', v.lower())
+                elif isinstance(v, list):
+                    cleaned_addr[k] = [re.sub(r'[^a-z0-9]', '', str(i).lower()) for i in v]
+            return cleaned_addr
         # General Recursion
         cleaned = {}
         for k, v in obj.items():
@@ -191,15 +204,32 @@ def extract_resource_data(item):
         identity_code = "FILE"
         date_val = "STATIC"
     
+
+    biz_id = None
+    identifiers = item.get("identifier", [])
+    if isinstance(identifiers, list):
+        for ident in identifiers:
+            # Check if this identifier is an NPI
+            system = str(ident.get("system", "")).lower()
+            if "us-npi" in system or "npi" in system:
+                biz_id = ident.get("value")
+                break
+  
+    # Fallback to standard logic if NPI not found
+    if not biz_id:
+        biz_id = get_val(item, "masterIdentifier.value") or get_val(item, "identifier.0.value")
+    # --------------------------------------------
+
     code_paths, date_paths = RESOURCE_MAP.get(res_type, DEFAULT_PATHS)
     
     # Logic: Find the first path that returns a non-null value
     identity_code = next((get_val(item, p) for p in code_paths if get_val(item, p)), "NOCODE")
     date_val = next((get_val(item, p) for p in date_paths if get_val(item, p)), "NODATE")
-    
-    biz_id = get_val(item, "identifier.0.value") or get_val(item, "identifier.value")
+    sort_time = str(date_val).replace(' ', 'T')[:16] if date_val not in ["STATIC", "NODATE"] else "0000"
+    # biz_id = get_val(item, "identifier.0.value") or get_val(item, "identifier.value")
     
     essence = get_clinical_essence(item)
+    essence_sig = json.dumps(essence, sort_keys=True)
     return {
         "internal_id": clean_ref(item.get("id")),
         "business_id": str(biz_id) if biz_id else None,
@@ -207,6 +237,8 @@ def extract_resource_data(item):
         "patient_ref": clean_ref(get_val(item, "subject.reference") or get_val(item, "patient.reference")),
         "code": normalize(identity_code),
         "date_key": normalize_date(date_val),
+        "sort_time": sort_time,               # This is Minute-level (YYYY-MM-DDTHH:MM)
+        "essence_sig": essence_sig,
         "essence": essence,
         "payload_hash": hashlib.sha256(json.dumps(essence, sort_keys=True).encode()).hexdigest(),
         "first_name": normalize(get_val(item, "name.0.given.0")),
@@ -251,7 +283,8 @@ def process_fingerprints(data_list, gid_map):
 
     # SORTING: We sort by internal_id to keep the sequence stable.
     # If we sorted by payload_hash here, a change in value would change the sequence number.
-    df = df.sort_values(["fp_base", "internal_id"])
+    # df = df.sort_values(["fp_base", "internal_id"])
+    df = df.sort_values(["fp_base", "sort_time", "essence_sig"])
     df["seq"] = df.groupby(["fp_base"]).cumcount() + 1
     
     df["final_fp"] = df["fp_base"] + "|seq-" + df["seq"].astype(str)
