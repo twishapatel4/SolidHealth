@@ -1,69 +1,88 @@
 [
   {
     "resourceType": "Patient",
-    "id": "PLAT-B-DEMOSKI-50",
+    "id": "nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452",
     "meta": {
-      "lastUpdated": "2024-01-15T12:00:00.000+00:00",
+      "lastUpdated": "2023-05-10T14:20:00.873+00:00",
       "profile": [
-        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient"
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient|4.0.1",
+        "http://interop-nexus.io/StructureDefinition/Nexus-Patient|1.0.0"
+      ],
+      "security": [
+        {
+          "system": "http://interop-nexus.io/accesspolicyname",
+          "code": "Tier 1 Provider Policy"
+        }
       ]
     },
     "extension": [
       {
         "url": "http://hl7.org/fhir/StructureDefinition/patient-religion",
         "valueCodeableConcept": {
+          "id": "rel-001",
           "coding": [
             {
-              "system": "http://terminology.hl7.org/CodeSystem/v3-ReligiousAffiliation",
-              "code": "1001",
-              "display": "Agnosticism"
+              "system": "http://fhir.interop-nexus.io/codes/Religion",
+              "code": "Agnostic",
+              "userSelected": true
             }
           ]
+        }
+      },
+      {
+        "url": "http://interop-nexus.io/fhirextensions#patientInstitutions",
+        "valueCoding": {
+          "id": "inst-001",
+          "code": "Nexus-Adapter-B"
         }
       }
     ],
     "identifier": [
       {
-        "system": "http://hl7.org/fhir/sid/us-ssn",
-        "value": "987119876"
-      },
-      {
-        "use": "official",
-        "system": "http://platform-b-ehr.com/identifiers/patient",
-        "value": "P-8827162"
+        "id": "nid1",
+        "use": "usual",
+        "type": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+              "code": "MR"
+            }
+          ]
+        },
+        "system": "http://fhir.interop-nexus.io/identifiers/MRN",
+        "value": "d4b1d050-584f-4797-a9c7-ab72e4cd4452"
       }
     ],
     "name": [
       {
+        "id": "name1",
         "use": "official",
         "family": "Demoski",
         "given": [
-          "Helen",
-          "Ann"
+          "Helen"
         ],
         "prefix": [
-          "Mrs"
+          "Ms"
         ]
       }
     ],
     "telecom": [
       {
+        "id": "tel-1",
         "system": "phone",
-        "value": "(555) 555-5555",
+        "value": "555-555-9999",
         "use": "home"
-      },
-      {
-        "system": "email",
-        "value": "helen.ann.demoski@provider-b.com"
       }
     ],
     "gender": "female",
     "birthDate": "1950-04-21",
+    "deceasedBoolean": false,
     "address": [
       {
+        "id": "address1",
         "use": "home",
         "line": [
-          "131 Parkland Ln"
+          "999 Innovation Drive"
         ],
         "city": "Richmond",
         "state": "VA",
@@ -72,89 +91,50 @@
       }
     ]
   },
-    {
-    "resourceType": "AllergyIntolerance",
-    "id": "4e329898-43ea-e611-8128-0a69c1b3225b",
-    "meta": {
-      "lastUpdated": "2017-02-03T19:04:33.517+00:00",
-      "profile": [
-        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance|3.1.1"
-      ],
-      "source": "http://fhir.carevolution.com/identifiers/CareEvolution/MRN/PACode"
-    },
-    "clinicalStatus": {
-      "coding": [
-        {
-          "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-          "code": "active"
-        },
-        {
-          "system": "http://fhir.carevolution.com/codes/FhirCodes/AllergyClinicalStatus",
-          "code": "active",
-          "display": "Active",
-          "userSelected": true
-        },
-        {
-          "system": "http://careevolution.com/fhircodes#AllergyClinicalStatus",
-          "code": "Active",
-          "display": "Active",
-          "userSelected": false
-        }
-      ]
-    },
-    "type": "allergy",
-    "code": {
-      "coding": [
-        {
-          "system": "http://fhir.carevolution.com/codes/DemoNamespace/AllergySubstance",
-          "code": "Pollen",
-          "userSelected": true
-        }
-      ]
-    },
-    "patient": {
-      "reference": "Patient/d4b1d050-584f-4797-a9c7-ab72e4cd4452",
-      "identifier": {
-        "system": "http://careevolution.com/fhir/PatientId",
-        "value": "f4968df0-3121-e611-8128-0a69c1b3225b"
-      }
-    },
-    "onsetDateTime": "2015-07-23T00:00:00-04:00",
-    "recordedDate": "2017-01-28T00:00:00-05:00"
-  },
   {
     "resourceType": "Provenance",
-    "id": "prov-001-patient-sync",
+    "id": "nexus-0-7b7f91945332ea11815a0a69c1b3225b",
+    "meta": {
+      "profile": [
+        "http://hl7.org/fhir/us/core/StructureDefinition/us-core-provenance|3.1.1"
+      ]
+    },
     "target": [
       {
-        "reference": "Patient/PLAT-B-DEMOSKI-50"
+        "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
       }
     ],
-    "recorded": "2024-01-15T12:00:00Z",
+    "recorded": "2023-05-10T14:20:40.873+00:00",
     "activity": {
       "coding": [
         {
           "system": "http://terminology.hl7.org/CodeSystem/v3-DataOperation",
-          "code": "CREATE"
+          "code": "UPDATE"
         }
       ]
     },
     "agent": [
       {
+        "type": {
+          "text": "Originating organization"
+        },
         "who": {
-          "display": "Platform B Data Bridge"
+          "display": "Interop Nexus HQ"
         }
       }
     ]
   },
   {
     "resourceType": "AllergyIntolerance",
-    "id": "PLAT-B-ALLERGY-1",
+    "id": "nexus-4e329898-43ea-e611-8128-0a69c1b3225b",
+    "meta": {
+      "lastUpdated": "2023-01-01T00:00:00.000+00:00"
+    },
     "clinicalStatus": {
       "coding": [
         {
           "system": "http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical",
-          "code": "active"
+          "code": "resolved"
         }
       ]
     },
@@ -162,55 +142,50 @@
     "code": {
       "coding": [
         {
-          "system": "http://snomed.info/sct",
-          "code": "256259004",
-          "display": "Pollen allergy 2"
-        }
-      ],
-      "text": "Pollen Allergy"
-    },
-    "patient": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "onsetDateTime": "2015-07-23",
-    "recordedDate": "2017-01-28T10:00:00Z"
-  },
-  {
-    "resourceType": "Basic",
-    "id": "PLAT-B-REFERRAL-100",
-    "extension": [
-      {
-        "url": "http://careevolution.com/fhirextensions#referral-period",
-        "valuePeriod": {
-          "start": "2016-01-08",
-          "end": "2016-01-10"
-        }
-      },
-      {
-        "url": "http://careevolution.com/fhirextensions#referral-authorizationNumber",
-        "valueString": "AUTH-1234-PLAT-B"
-      }
-    ],
-    "code": {
-      "coding": [
-        {
-          "system": "http://terminology.hl7.org/CodeSystem/basic-resource-type",
-          "code": "referral"
+          "system": "http://fhir.interop-nexus.io/codes/AllergySubstance",
+          "code": "Pollen",
+          "userSelected": true
         }
       ]
     },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    }
+    "patient": {
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
+    },
+    "onsetDateTime": "2015-07-23T00:00:00-04:00"
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "nexus-df968df0-3121-e611-8128-0a69c1b3225b",
+    "identifier": [
+      {
+        "system": "http://fhir.interop-nexus.io/identifiers/NPI",
+        "value": "9998887771"
+      }
+    ],
+    "name": [
+      {
+        "family": "Smith",
+        "given": [
+          "Mary"
+        ]
+      }
+    ]
+  },
+  {
+    "resourceType": "Practitioner",
+    "id": "nexus-de968df0-3121-e611-8128-0a69c1b3225b",
+    "name": [
+      {
+        "family": "Johnson",
+        "given": [
+          "Bob"
+        ]
+      }
+    ]
   },
   {
     "resourceType": "Claim",
-    "id": "PLAT-B-CLAIM-999",
-    "identifier": [
-      {
-        "value": "CLAIM-B-8821"
-      }
-    ],
+    "id": "nexus-6f978df0-3121-e611-8128-0a69c1b3225b",
     "status": "active",
     "type": {
       "coding": [
@@ -222,93 +197,19 @@
     },
     "use": "claim",
     "patient": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     },
     "billablePeriod": {
-      "start": "2013-09-01",
-      "end": "2013-09-11"
+      "start": "2012-08-31",
+      "end": "2012-09-10"
     },
-    "diagnosis": [
-      {
-        "sequence": 1,
-        "diagnosisCodeableConcept": {
-          "coding": [
-            {
-              "system": "http://hl7.org/fhir/sid/icd-10-cm",
-              "code": "J96.21",
-              "display": "Acute and chronic respiratory failure with hypoxia"
-            }
-          ]
-        }
-      }
-    ],
     "total": {
-      "value": 64488.35,
-      "currency": "USD"
+      "value": 7500.00
     }
-  },
-    {
-    "resourceType": "Condition",
-    "id": "problem0",
-    "category": [
-      {
-        "coding": [
-          {
-            "system": "http://fhir.carevolution.com/codes/DemoNamespace/DiagnosisType",
-            "code": "Primary",
-            "display": "Primary Diagnosis from the new file",
-            "userSelected": true
-          },
-          {
-            "system": "http://careevolution.com/fhircodes#DiagnosisType",
-            "code": "Primary",
-            "display": "Primary",
-            "userSelected": false
-          }
-        ]
-      }
-    ],
-    "code": {
-      "coding": [
-        {
-          "system": "http://fhir.carevolution.com/codes/DemoNamespace/DiagnosisCode",
-          "code": "123.4",
-          "display": "Some diagnosis requiring surgery.",
-          "userSelected": true
-        },
-        {
-          "system": "http://fhir.carevolution.com/codes/z-ICD9-DONOTUSE/DiagnosisCode",
-          "version": "LEGACY",
-          "code": "1234",
-          "display": "Diphyllobothriasis, intestinal",
-          "userSelected": false
-        },
-        {
-          "system": "http://hl7.org/fhir/sid/icd-9-cm",
-          "code": "123.4",
-          "display": "Diphyllobothriasis, intestinal",
-          "userSelected": false
-        },
-        {
-          "system": "http://fhir.carevolution.com/codes/ICD9/DiagnosisCode",
-          "code": "1234",
-          "display": "Diphyllobothriasis, intestinal",
-          "userSelected": false
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/d4b1d050-584f-4797-a9c7-ab72e4cd4452",
-      "identifier": {
-        "system": "http://careevolution.com/fhir/PatientId",
-        "value": "f4968df0-3121-e611-8128-0a69c1b3225b"
-      }
-    },
-    "onsetDateTime": "2016-01-08T00:00:00-05:00"
   },
   {
     "resourceType": "Condition",
-    "id": "PLAT-B-COND-001",
+    "id": "nexus-6.6c978df03121e61181280a69c1b3225b",
     "clinicalStatus": {
       "coding": [
         {
@@ -320,186 +221,51 @@
     "code": {
       "coding": [
         {
-          "system": "http://snomed.info/sct",
-          "code": "67905004",
-          "display": "Acute-on-chronic respiratory failure"
+          "system": "http://fhir.interop-nexus.io/codes/DiagnosisCode",
+          "code": "799.02",
+          "display": "HYPOXEMIA"
         }
       ]
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "onsetDateTime": "2013-09-01T00:00:00Z"
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PLAT-B-COND-002",
-    "code": {
-      "coding": [
-        {
-          "system": "http://snomed.info/sct",
-          "code": "235595009",
-          "display": "Gastroesophageal reflux disease"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     }
   },
   {
     "resourceType": "Condition",
-    "id": "PLAT-B-COND-003",
+    "id": "nexus-6.6b978df03121e61181280a69c1b3225b",
     "code": {
       "coding": [
         {
-          "system": "http://snomed.info/sct",
-          "code": "69896004",
-          "display": "Rheumatoid arthritis"
+          "system": "http://fhir.interop-nexus.io/codes/DiagnosisCode",
+          "code": "530.81",
+          "display": "ESOPHAGEAL REFLUX"
         }
       ]
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     }
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PLAT-B-COND-004",
-    "code": {
-      "coding": [
-        {
-          "system": "http://snomed.info/sct",
-          "code": "238136002",
-          "display": "Morbid obesity"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    }
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PLAT-B-COND-005",
-    "code": {
-      "coding": [
-        {
-          "system": "http://snomed.info/sct",
-          "code": "42343007",
-          "display": "Congestive heart failure"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    }
-  },
-  {
-    "resourceType": "Device",
-    "id": "PLAT-B-DEVICE-IMPLANT",
-    "status": "active",
-    "distinctIdentifier": "PB-DH-9921",
-    "manufacturer": "HealthTech Systems",
-    "patient": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "type": {
-      "coding": [
-        {
-          "system": "http://snomed.info/sct",
-          "code": "6012004",
-          "display": "Hearing aid"
-        }
-      ]
-    }
-  },
-  {
-    "resourceType": "DiagnosticReport",
-    "id": "PLAT-B-LAB-RPT-1",
-    "status": "final",
-    "category": [
-      {
-        "coding": [
-          {
-            "system": "http://terminology.hl7.org/CodeSystem/v2-0074",
-            "code": "LAB"
-          }
-        ]
-      }
-    ],
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "2093-3",
-          "display": "Cholesterol Panel"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "effectiveDateTime": "2025-01-27T08:25:00-05:00",
-    "result": [
-      {
-        "reference": "Observation/PB-OBS-CHOL-1"
-      },
-      {
-        "reference": "Observation/PB-OBS-HDL-1"
-      }
-    ]
   },
   {
     "resourceType": "Observation",
-    "id": "PB-OBS-CHOL-1",
-    "status": "final",
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "2093-3",
-          "display": "Total Cholesterol"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "effectiveDateTime": "2025-01-27T08:25:00-05:00",
-    "valueQuantity": {
-      "value": 135.0,
-      "unit": "mg/dL",
-      "system": "http://unitsofmeasure.org",
-      "code": "mg/dL"
-    },
-    "referenceRange": [
-      {
-        "high": {
-          "value": 190.0
-        }
-      }
-    ]
-  },
-  {
-    "resourceType": "Observation",
-    "id": "PB-OBS-HDL-1",
+    "id": "nexus-obs-hdl-1",
     "status": "final",
     "code": {
       "coding": [
         {
           "system": "http://loinc.org",
           "code": "2085-9",
-          "display": "HDL Cholesterol"
+          "display": "HDLc SerPl-mCnc"
         }
       ]
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     },
-    "effectiveDateTime": "2025-01-27T08:25:00-05:00",
+    "effectiveDateTime": "2024-02-28T08:25:00-04:00",
     "valueQuantity": {
-      "value": 45.0,
+      "value": 55.5,
       "unit": "mg/dL",
       "system": "http://unitsofmeasure.org",
       "code": "mg/dL"
@@ -507,139 +273,152 @@
   },
   {
     "resourceType": "Observation",
-    "id": "PB-OBS-BUN-1",
+    "id": "nexus-obs-ldl-1",
     "status": "final",
     "code": {
       "coding": [
         {
           "system": "http://loinc.org",
-          "code": "6299-2",
-          "display": "Blood Urea Nitrogen"
+          "code": "13457-7",
+          "display": "LDLc SerPl Calc-mCnc"
         }
       ]
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     },
-    "effectiveDateTime": "2024-12-03T22:13:00-05:00",
+    "effectiveDateTime": "2024-02-28T08:25:00-04:00",
     "valueQuantity": {
-      "value": 26.0,
-      "unit": "mg/dL"
+      "value": 160.2,
+      "unit": "mg/dL",
+      "system": "http://unitsofmeasure.org",
+      "code": "mg/dL"
     }
   },
   {
-    "resourceType": "Observation",
-    "id": "PB-OBS-K-1",
-    "status": "final",
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "2823-3",
-          "display": "Potassium"
-        }
-      ]
+    "resourceType": "Encounter",
+    "id": "nexus-03978df0-3121-e611-8128-0a69c1b3225b",
+    "status": "finished",
+    "class": {
+      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+      "code": "IMP"
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     },
-    "effectiveDateTime": "2024-12-03T22:13:00-05:00",
-    "valueQuantity": {
-      "value": 4.3,
-      "unit": "mmol/L"
+    "period": {
+      "start": "2016-05-19",
+      "end": "2016-05-24"
     }
   },
   {
-    "resourceType": "Observation",
-    "id": "PB-OBS-CL-1",
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-4.b18680d5c93ee91181440a69c1b3225b",
     "status": "final",
     "code": {
       "coding": [
         {
-          "system": "http://loinc.org",
-          "code": "2075-0",
-          "display": "Chloride"
+          "system": "http://fhir.interop-nexus.io/codes/LabService",
+          "code": "1790057",
+          "display": "Lipid Panel"
         }
       ]
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     },
-    "effectiveDateTime": "2024-12-03T22:13:00-05:00",
-    "valueQuantity": {
-      "value": 104.0,
-      "unit": "mmol/L"
+    "result": [
+      {
+        "reference": "Observation/nexus-obs-hdl-1"
+      }
+    ]
+  },
+  {
+    "resourceType": "Procedure",
+    "id": "nexus-8.6e978df03121e61181280a69c1b3225b",
+    "status": "completed",
+    "code": {
+      "coding": [
+        {
+          "system": "http://fhir.interop-nexus.io/codes/ProcedureCode",
+          "code": "38.97",
+          "display": "CVC PLACEMENT"
+        }
+      ]
+    },
+    "subject": {
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     }
   },
   {
-    "resourceType": "Observation",
-    "id": "PB-OBS-HGB-1",
-    "status": "final",
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "718-7",
-          "display": "Hemoglobin"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "effectiveDateTime": "2024-12-03T23:32:00-05:00",
-    "valueQuantity": {
-      "value": 10.2,
-      "unit": "g/dL"
-    }
+    "resourceType": "Organization",
+    "id": "nexus-org-1",
+    "name": "Nexus Health Group",
+    "identifier": [
+      {
+        "system": "http://interop-nexus.io/ids",
+        "value": "NEX-001"
+      }
+    ]
+  },
+  {
+    "resourceType": "Binary",
+    "id": "nexus-binary-1",
+    "contentType": "text/plain",
+    "data": "U3ludGhldGljIFRlc3QgRGF0YSBmb3IgdmFsaWRhdGlvbi4="
+  },
+  {
+    "resourceType": "Condition",
+    "id": "nexus-cond-3",
+    "code": { "coding": [{"code": "4619", "display": "SINUSITIS"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Condition",
+    "id": "nexus-cond-4",
+    "code": { "coding": [{"code": "81341", "display": "FRACTURE"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Condition",
+    "id": "nexus-cond-5",
+    "code": { "coding": [{"code": "49390", "display": "ASTHMA"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
     "resourceType": "Observation",
-    "id": "PB-OBS-WBC-1",
+    "id": "nexus-obs-bp-1",
     "status": "final",
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "6690-2",
-          "display": "White Blood Cell Count"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "effectiveDateTime": "2024-12-03T23:32:00-05:00",
-    "valueQuantity": {
-      "value": 16.6,
-      "unit": "10*3/uL"
-    }
+    "code": { "coding": [{"code": "BloodPressureSystolic"}] },
+    "valueQuantity": { "value": 155.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
     "resourceType": "Observation",
-    "id": "PB-OBS-BP-SYS",
+    "id": "nexus-obs-bp-2",
     "status": "final",
-    "code": {
-      "coding": [
-        {
-          "system": "http://loinc.org",
-          "code": "8480-6",
-          "display": "Systolic BP"
-        }
-      ]
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "effectiveDateTime": "2016-05-22T14:00:00Z",
-    "valueQuantity": {
-      "value": 160.0,
-      "unit": "mmHg"
-    }
+    "code": { "coding": [{"code": "BloodPressureDiastolic"}] },
+    "valueQuantity": { "value": 85.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-gluc-1",
+    "status": "final",
+    "code": { "coding": [{"code": "BloodGlucose"}] },
+    "valueQuantity": { "value": 125.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-prog-1",
+    "code": { "coding": [{"code": "1", "display": "Progress Note"}] },
+    "valueString": "Patient shows improvement in respiratory function.",
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
     "resourceType": "MedicationRequest",
-    "id": "PB-MED-REQ-001",
+    "id": "nexus-med-61c8ed05",
     "status": "completed",
     "intent": "order",
     "medicationCodeableConcept": {
@@ -652,804 +431,476 @@
       ]
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "authoredOn": "2021-05-22",
-    "requester": {
-      "reference": "Practitioner/PLAT-B-PRAC-001"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     }
   },
   {
-    "resourceType": "Practitioner",
-    "id": "PLAT-B-PRAC-001",
-    "identifier": [
-      {
-        "system": "http://hl7.org/fhir/sid/us-npi",
-        "value": "1437149283"
-      }
-    ],
-    "name": [
-      {
-        "family": "Renze",
-        "given": [
-          "Christopher"
-        ]
-      }
-    ]
+    "resourceType": "Observation",
+    "id": "nexus-obs-ldl-calc",
+    "status": "final",
+    "code": { "coding": [{"code": "13457-7"}] },
+    "valueQuantity": { "value": 139.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Practitioner",
-    "id": "PLAT-B-PRAC-002",
-    "name": [
-      {
-        "family": "Smith",
-        "given": [
-          "Mary"
-        ]
-      }
-    ]
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-a9868",
+    "status": "final",
+    "code": { "coding": [{"code": "VWP"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Practitioner",
-    "id": "PLAT-B-PRAC-003",
-    "name": [
-      {
-        "family": "Johnson",
-        "given": [
-          "Bob"
-        ]
-      }
-    ]
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-8dbe9",
+    "status": "final",
+    "code": { "coding": [{"code": "VWP"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Practitioner",
-    "id": "PLAT-B-PRAC-004",
-    "name": [
-      {
-        "family": "White",
-        "given": [
-          "Sheila"
-        ]
-      }
-    ]
+    "resourceType": "Observation",
+    "id": "nexus-obs-bun-1",
+    "status": "final",
+    "code": { "coding": [{"code": "BUN"}] },
+    "valueQuantity": { "value": 22.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Practitioner",
-    "id": "PLAT-B-PRAC-005",
-    "name": [
-      {
-        "family": "Williams",
-        "given": [
-          "Rick"
-        ]
-      }
-    ]
+    "resourceType": "Observation",
+    "id": "nexus-obs-k-1",
+    "status": "final",
+    "code": { "coding": [{"code": "K"}] },
+    "valueQuantity": { "value": 4.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Organization",
-    "id": "PLAT-B-ORG-1",
-    "name": "General Medical Center - Platform B"
+    "resourceType": "Observation",
+    "id": "nexus-obs-cl-1",
+    "status": "final",
+    "code": { "coding": [{"code": "CL"}] },
+    "valueQuantity": { "value": 102.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Encounter",
-    "id": "PLAT-B-ENC-1",
-    "status": "finished",
-    "class": {
-      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-      "code": "AMB",
-      "display": "ambulatory"
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "period": {
-      "start": "2016-05-19T00:00:00Z",
-      "end": "2016-05-24T08:00:00Z"
-    }
+    "resourceType": "Observation",
+    "id": "nexus-obs-na-1",
+    "status": "final",
+    "code": { "coding": [{"code": "NA"}] },
+    "valueQuantity": { "value": 140.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Encounter",
-    "id": "PLAT-B-ENC-2",
-    "status": "finished",
-    "class": {
-      "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
-      "code": "EMER"
-    },
-    "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
-    },
-    "period": {
-      "start": "2013-02-10T00:00:00Z"
-    }
+    "resourceType": "Observation",
+    "id": "nexus-obs-hct-1",
+    "status": "final",
+    "code": { "coding": [{"code": "HCT"}] },
+    "valueQuantity": { "value": 30.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
   },
   {
-    "resourceType": "Procedure",
-    "id": "PLAT-B-PROC-001",
-    "status": "completed",
-    "code": {
+    "resourceType": "Observation",
+    "id": "nexus-obs-hgb-1",
+    "status": "final",
+    "code": { "coding": [{"code": "HGB"}] },
+    "valueQuantity": { "value": 11.1 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-wbc-1",
+    "status": "final",
+    "code": { "coding": [{"code": "WBC"}] },
+    "valueQuantity": { "value": 15.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-9c159",
+    "status": "final",
+    "code": { "coding": [{"code": "LYBGCR"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-9b159",
+    "status": "final",
+    "code": { "coding": [{"code": "NA"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-9a159",
+    "status": "final",
+    "code": { "coding": [{"code": "LYBGCR"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-99159",
+    "status": "final",
+    "code": { "coding": [{"code": "BMET"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-mel-1",
+    "code": { "coding": [{"code": "MELDeliversCDAMEnrollmentDate"}] },
+    "valueString": "01/15/2020",
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-xform-1",
+    "code": { "coding": [{"code": "DateFirstEditedInXForm"}] },
+    "valueString": "11/10/2017",
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "ExplanationOfBenefit",
+    "id": "nexus-eob-1",
+    "status": "active",
+    "type": { "coding": [{"code": "institutional"}] },
+    "patient": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" },
+    "outcome": "complete",
+    "total": [{ "amount": { "value": 5000.0 } }]
+  },
+  {
+    "resourceType": "ExplanationOfBenefit",
+    "id": "nexus-eob-2",
+    "status": "active",
+    "type": { "coding": [{"code": "professional"}] },
+    "patient": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" },
+    "total": [{ "amount": { "value": 450.0 } }]
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-hr-1",
+    "code": { "coding": [{"code": "HeartRate"}] },
+    "valueQuantity": { "value": 72.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-bp-sys",
+    "code": { "coding": [{"code": "BloodPressureSystolic"}] },
+    "valueQuantity": { "value": 130.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-bp-dia",
+    "code": { "coding": [{"code": "BloodPressureDiastolic"}] },
+    "valueQuantity": { "value": 82.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-weight-1",
+    "code": { "coding": [{"code": "BodyWeight"}] },
+    "valueQuantity": { "value": 75.0, "unit": "kg" },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-94159",
+    "status": "final",
+    "code": { "coding": [{"code": "VWP"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" },
+    "effectiveDateTime": "2024-12-03T05:20:00-05:00"
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-93159",
+    "status": "final",
+    "code": { "coding": [{"code": "VWP"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" },
+    "effectiveDateTime": "2024-12-01T04:25:00-05:00"
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-4b498",
+    "status": "final",
+    "code": { "coding": [{"code": "BMET"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DiagnosticReport",
+    "id": "nexus-diag-4a498",
+    "status": "final",
+    "code": { "coding": [{"code": "LYBGCR"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6649",
+    "status": "final",
+    "code": { "coding": [{"code": "CL"}] },
+    "valueQuantity": { "value": 105.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6549",
+    "status": "final",
+    "code": { "coding": [{"code": "K"}] },
+    "valueQuantity": { "value": 4.1 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6449",
+    "status": "final",
+    "code": { "coding": [{"code": "CO2"}] },
+    "valueQuantity": { "value": 27.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6349",
+    "status": "final",
+    "code": { "coding": [{"code": "NA"}] },
+    "valueQuantity": { "value": 141.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6249",
+    "status": "final",
+    "code": { "coding": [{"code": "BUN"}] },
+    "valueQuantity": { "value": 24.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6149",
+    "status": "final",
+    "code": { "coding": [{"code": "CO2"}] },
+    "valueQuantity": { "value": 24.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-6049",
+    "status": "final",
+    "code": { "coding": [{"code": "CL"}] },
+    "valueQuantity": { "value": 103.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5f49",
+    "status": "final",
+    "code": { "coding": [{"code": "CL"}] },
+    "valueQuantity": { "value": 110.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5e49",
+    "status": "final",
+    "code": { "coding": [{"code": "CO2"}] },
+    "valueQuantity": { "value": 25.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5d49",
+    "status": "final",
+    "code": { "coding": [{"code": "NA"}] },
+    "valueQuantity": { "value": 143.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5c49",
+    "status": "final",
+    "code": { "coding": [{"code": "CO2"}] },
+    "valueQuantity": { "value": 26.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5b49",
+    "status": "final",
+    "code": { "coding": [{"code": "K"}] },
+    "valueQuantity": { "value": 4.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5a49",
+    "status": "final",
+    "code": { "coding": [{"code": "NA"}] },
+    "valueQuantity": { "value": 137.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5949",
+    "status": "final",
+    "code": { "coding": [{"code": "BUN"}] },
+    "valueQuantity": { "value": 21.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5849",
+    "status": "final",
+    "code": { "coding": [{"code": "K"}] },
+    "valueQuantity": { "value": 4.35 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5749",
+    "status": "final",
+    "code": { "coding": [{"code": "CL"}] },
+    "valueQuantity": { "value": 104.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5649",
+    "status": "final",
+    "code": { "coding": [{"code": "K"}] },
+    "valueQuantity": { "value": 4.31 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5549",
+    "status": "final",
+    "code": { "coding": [{"code": "CO2"}] },
+    "valueQuantity": { "value": 26.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5449",
+    "status": "final",
+    "code": { "coding": [{"code": "NA"}] },
+    "valueQuantity": { "value": 136.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5349",
+    "status": "final",
+    "code": { "coding": [{"code": "BUN"}] },
+    "valueQuantity": { "value": 25.8 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5249",
+    "status": "final",
+    "code": { "coding": [{"code": "TEST-B"}] },
+    "valueString": "Updated value for testing",
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5149",
+    "status": "final",
+    "code": { "coding": [{"code": "TEST-A"}] },
+    "valueString": "Nexus Secure Result",
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-5049",
+    "status": "final",
+    "code": { "coding": [{"code": "HCT"}] },
+    "valueQuantity": { "value": 29.1 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-4f49",
+    "status": "final",
+    "code": { "coding": [{"code": "HGB"}] },
+    "valueQuantity": { "value": 10.5 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-4e49",
+    "status": "final",
+    "code": { "coding": [{"code": "WBC"}] },
+    "valueQuantity": { "value": 16.9 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-4d49",
+    "status": "final",
+    "code": { "coding": [{"code": "RBC"}] },
+    "valueQuantity": { "value": 14.1 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-4c49",
+    "status": "final",
+    "code": { "coding": [{"code": "RBC"}] },
+    "valueQuantity": { "value": 14.2 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-b5e1",
+    "status": "final",
+    "code": { "coding": [{"code": "30522-7"}] },
+    "valueQuantity": { "value": 3.4 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-b4e1",
+    "status": "final",
+    "code": { "coding": [{"code": "2085-9"}] },
+    "valueQuantity": { "value": 115.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "Observation",
+    "id": "nexus-obs-res-b3e1",
+    "status": "final",
+    "code": { "coding": [{"code": "2093-3"}] },
+    "valueQuantity": { "value": 155.0 },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" }
+  },
+  {
+    "resourceType": "DocumentReference",
+    "id": "nexus-doc-1",
+    "status": "current",
+    "type": { "coding": [{"code": "Cda"}] },
+    "subject": { "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452" },
+    "date": "2014-09-19T11:47:54-04:00",
+    "content": [{ "attachment": { "contentType": "application/xml" } }]
+  },
+  {
+    "resourceType": "MedicationStatement",
+    "id": "nexus-added-med-01",
+    "status": "active",
+    "medicationCodeableConcept": {
       "coding": [
         {
-          "system": "http://snomed.info/sct",
-          "code": "38.97",
-          "display": "CVC Placement"
+          "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+          "code": "860975",
+          "display": "Metformin 500 MG Oral Tablet"
         }
-      ]
+      ],
+      "text": "ADDED CLINICAL DATA: Metformin for Diabetes"
     },
     "subject": {
-      "reference": "Patient/PLAT-B-DEMOSKI-50"
+      "reference": "Patient/nexus-d4b1d050-584f-4797-a9c7-ab72e4cd4452"
     },
-    "performedDateTime": "2013-09-01T00:00:00Z"
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-claim-update",
-    "target": [
-      {
-        "reference": "Claim/PLAT-B-CLAIM-999"
-      }
-    ],
-    "recorded": "2024-02-01T10:00:00Z",
-    "agent": [
-      {
-        "who": {
-          "display": "Billing System B"
-        }
-      }
-    ]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-obs-sync",
-    "target": [
-      {
-        "reference": "Observation/PB-OBS-CHOL-1"
-      }
-    ],
-    "recorded": "2025-01-27T10:00:00Z",
-    "agent": [
-      {
-        "who": {
-          "display": "Lab Bridge B"
-        }
-      }
-    ]
+    "effectiveDateTime": "2024-01-10T10:00:00Z"
   },
   {
     "resourceType": "Binary",
-    "id": "PLAT-B-REPORT-BINARY",
+    "id": "nexus-binary-lab-report",
     "contentType": "text/plain",
-    "data": "U3ludGhldGljIFBsYXRmb3JtIEIgT3BlcmF0aXZlIFJlcG9ydDogUGF0aWVudCBIZWxlbiBEZW1vc2tpIHVuZGVyd2VudCBzdXJnZXJ5IHdpdGhvdXQgY29tcGxpY2F0aW9ucy4="
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-001",
-    "target": [{"reference": "Observation/PB-OBS-BUN-1"}],
-    "recorded": "2024-12-04T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-002",
-    "target": [{"reference": "Observation/PB-OBS-K-1"}],
-    "recorded": "2024-12-04T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-003",
-    "target": [{"reference": "Observation/PB-OBS-CL-1"}],
-    "recorded": "2024-12-04T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-004",
-    "target": [{"reference": "Observation/PB-OBS-HGB-1"}],
-    "recorded": "2024-12-04T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-005",
-    "target": [{"reference": "Observation/PB-OBS-WBC-1"}],
-    "recorded": "2024-12-04T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Nightly Sync"}}]
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PB-DIAG-SINUS",
-    "code": {
-      "coding": [{"system": "http://snomed.info/sct", "code": "15805002", "display": "Acute sinusitis"}]
-    },
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "onsetDateTime": "2012-07-12"
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PB-DIAG-FRACTURE-1",
-    "code": {
-      "coding": [{"system": "http://snomed.info/sct", "code": "269083002", "display": "Colles fracture"}]
-    },
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "onsetDateTime": "2012-04-08"
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PB-DIAG-FRACTURE-2",
-    "code": {
-      "coding": [{"system": "http://snomed.info/sct", "code": "72497001", "display": "Fracture of neck of radius"}]
-    },
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "onsetDateTime": "2012-05-02"
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PB-DIAG-ASTHMA",
-    "code": {
-      "coding": [{"system": "http://snomed.info/sct", "code": "195967001", "display": "Asthma"}]
-    },
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "onsetDateTime": "2013-07-25"
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PB-DIAG-HTN",
-    "code": {
-      "coding": [{"system": "http://snomed.info/sct", "code": "1201005", "display": "Essential hypertension"}]
-    },
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "onsetDateTime": "2015-06-20"
-  },
-  {
-    "resourceType": "Condition",
-    "id": "PB-DIAG-KIDNEY",
-    "code": {
-      "coding": [{"system": "http://snomed.info/sct", "code": "443820000", "display": "Disorder of kidney"}]
-    },
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "onsetDateTime": "2015-06-20"
-  },
-  {
-    "resourceType": "ExplanationOfBenefit",
-    "id": "PB-EOB-PROF-1",
-    "status": "active",
-    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "professional"}]},
-    "use": "claim",
-    "patient": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "total": [{"amount": {"value": 379.7}}],
-    "payment": {"amount": {"value": 73.69}}
-  },
-  {
-    "resourceType": "ExplanationOfBenefit",
-    "id": "PB-EOB-INST-1",
-    "status": "active",
-    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional"}]},
-    "use": "claim",
-    "patient": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "total": [{"amount": {"value": 64488.35}}],
-    "payment": {"amount": {"value": 15585.54}}
-  },
-  {
-    "resourceType": "ExplanationOfBenefit",
-    "id": "PB-EOB-INST-2",
-    "status": "active",
-    "type": {"coding": [{"system": "http://terminology.hl7.org/CodeSystem/claim-type", "code": "institutional"}]},
-    "use": "claim",
-    "patient": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "total": [{"amount": {"value": 6300.35}}],
-    "payment": {"amount": {"value": 3000.54}}
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "PB-PROV-CONDITION-1",
-    "target": [{"reference": "Condition/PB-DIAG-SINUS"}],
-    "recorded": "2012-07-13T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "PB-PROV-CONDITION-2",
-    "target": [{"reference": "Condition/PB-DIAG-FRACTURE-1"}],
-    "recorded": "2012-04-09T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "PB-PROV-CONDITION-3",
-    "target": [{"reference": "Condition/PB-DIAG-FRACTURE-2"}],
-    "recorded": "2012-05-03T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "PB-PROV-CONDITION-4",
-    "target": [{"reference": "Condition/PB-DIAG-ASTHMA"}],
-    "recorded": "2013-07-26T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "PB-PROV-CONDITION-5",
-    "target": [{"reference": "Condition/PB-DIAG-HTN"}],
-    "recorded": "2015-06-21T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "PB-PROV-CONDITION-6",
-    "target": [{"reference": "Condition/PB-DIAG-KIDNEY"}],
-    "recorded": "2015-06-21T00:00:00Z",
-    "agent": [{"who": {"display": "Platform B Record Keeper"}}]
-  },
-  {
-    "resourceType": "Observation",
-    "id": "PB-OBS-TAG-1",
-    "status": "final",
-    "code": {"coding": [{"code": "ADT-GT1-Name"}]},
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "valueString": "Demoski, Helen"
-  },
-  {
-    "resourceType": "Observation",
-    "id": "PB-OBS-TAG-2",
-    "status": "final",
-    "code": {"coding": [{"code": "ADT-GT1-Addr"}]},
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "valueString": "123 Main St, Ann Arbor, MI"
-  },
-  {
-    "resourceType": "Observation",
-    "id": "PB-OBS-TAG-3",
-    "status": "final",
-    "code": {"coding": [{"code": "ADT-GT1-Phone"}]},
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "valueString": "555-555-5555"
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-tag-1",
-    "target": [{"reference": "Observation/PB-OBS-TAG-1"}],
-    "recorded": "2016-05-23T22:02:00Z",
-    "agent": [{"who": {"display": "Platform B Guarantor Processor"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-tag-2",
-    "target": [{"reference": "Observation/PB-OBS-TAG-2"}],
-    "recorded": "2016-05-23T22:02:00Z",
-    "agent": [{"who": {"display": "Platform B Guarantor Processor"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-tag-3",
-    "target": [{"reference": "Observation/PB-OBS-TAG-3"}],
-    "recorded": "2016-05-23T22:02:00Z",
-    "agent": [{"who": {"display": "Platform B Guarantor Processor"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-006",
-    "target": [{"reference": "Observation/1.887f91945332ea11815a0a69c1b3225b"}],
-    "recorded": "2020-01-08T20:15:16Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-007",
-    "target": [{"reference": "Observation/1.4bc3b642fea9e71181330a69c1b3225b"}],
-    "recorded": "2017-10-05T18:51:58Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-008",
-    "target": [{"reference": "Observation/1.fee185f63121e61181280a69c1b3225b"}],
-    "recorded": "2012-12-04T14:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-009",
-    "target": [{"reference": "Observation/1.fde185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T14:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-010",
-    "target": [{"reference": "Observation/1.fce185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T14:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-011",
-    "target": [{"reference": "Observation/1.fbe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-06T13:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-012",
-    "target": [{"reference": "Observation/1.fae185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T13:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-013",
-    "target": [{"reference": "Observation/1.f9e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-014",
-    "target": [{"reference": "Observation/1.f8e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-015",
-    "target": [{"reference": "Observation/1.f7e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-016",
-    "target": [{"reference": "Observation/1.f6e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-017",
-    "target": [{"reference": "Observation/1.f5e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-018",
-    "target": [{"reference": "Observation/1.f4e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-019",
-    "target": [{"reference": "Observation/1.f3e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-020",
-    "target": [{"reference": "Observation/1.f2e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-021",
-    "target": [{"reference": "Observation/1.f1e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-022",
-    "target": [{"reference": "Observation/1.f0e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-023",
-    "target": [{"reference": "Observation/1.efe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-024",
-    "target": [{"reference": "Observation/1.eee185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-025",
-    "target": [{"reference": "Observation/1.ede185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-026",
-    "target": [{"reference": "Observation/1.ece185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-027",
-    "target": [{"reference": "Observation/1.ebe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-028",
-    "target": [{"reference": "Observation/1.eae185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-029",
-    "target": [{"reference": "Observation/1.e9e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-030",
-    "target": [{"reference": "Observation/1.e8e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-031",
-    "target": [{"reference": "Observation/1.e7e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-032",
-    "target": [{"reference": "Observation/1.e6e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-033",
-    "target": [{"reference": "Observation/1.e5e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-034",
-    "target": [{"reference": "Observation/1.e4e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-035",
-    "target": [{"reference": "Observation/1.e3e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-036",
-    "target": [{"reference": "Observation/1.e2e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T16:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-037",
-    "target": [{"reference": "Observation/1.e1e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T13:30:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-038",
-    "target": [{"reference": "Observation/1.e0e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T16:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-039",
-    "target": [{"reference": "Observation/1.dfe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-20T00:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-040",
-    "target": [{"reference": "Observation/1.dee185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-20T04:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-041",
-    "target": [{"reference": "Observation/1.dde185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T20:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-042",
-    "target": [{"reference": "Observation/1.dce185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T06:40:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-043",
-    "target": [{"reference": "Observation/1.dbe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-21T20:47:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-044",
-    "target": [{"reference": "Observation/1.dae185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-23T03:50:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-045",
-    "target": [{"reference": "Observation/1.d9e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T21:30:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-046",
-    "target": [{"reference": "Observation/1.d8e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T04:30:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-047",
-    "target": [{"reference": "Observation/1.d7e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-20T12:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-048",
-    "target": [{"reference": "Observation/1.d6e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-20T08:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-049",
-    "target": [{"reference": "Observation/1.d5e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T16:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-050",
-    "target": [{"reference": "Observation/1.d4e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T13:30:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-051",
-    "target": [{"reference": "Observation/1.d3e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T06:40:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-052",
-    "target": [{"reference": "Observation/1.d2e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T06:40:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-053",
-    "target": [{"reference": "Observation/1.d1e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-21T11:49:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-054",
-    "target": [{"reference": "Observation/1.d0e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-21T20:47:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-055",
-    "target": [{"reference": "Observation/1.cfe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-20T12:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-056",
-    "target": [{"reference": "Observation/1.cee185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T20:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-057",
-    "target": [{"reference": "Observation/1.cde185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T16:00:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-058",
-    "target": [{"reference": "Observation/1.cce185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T13:30:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-059",
-    "target": [{"reference": "Observation/1.cbe185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-22T14:18:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-060",
-    "target": [{"reference": "Observation/1.cae185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T09:15:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-061",
-    "target": [{"reference": "Observation/1.c9e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T06:40:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-bulk-batch-062",
-    "target": [{"reference": "Observation/1.c8e185f63121e61181280a69c1b3225b"}],
-    "recorded": "2016-05-19T07:54:00Z",
-    "agent": [{"who": {"display": "System Sync"}}]
-  },
-  {
-    "resourceType": "MedicationRequest",
-    "id": "PB-MED-REQ-002",
-    "status": "completed",
-    "intent": "order",
-    "medicationCodeableConcept": {"coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "83156", "display": "Prevacid"}]},
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "authoredOn": "2012-09-16",
-    "requester": {"reference": "Practitioner/PLAT-B-PRAC-002"}
-  },
-  {
-    "resourceType": "MedicationRequest",
-    "id": "PB-MED-REQ-003",
-    "status": "completed",
-    "intent": "order",
-    "medicationCodeableConcept": {"coding": [{"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "212549", "display": "Amlodipine"}]},
-    "subject": {"reference": "Patient/PLAT-B-DEMOSKI-50"},
-    "authoredOn": "2012-09-16",
-    "requester": {"reference": "Practitioner/PLAT-B-PRAC-002"}
-  },
-  {
-    "resourceType": "Provenance",
-    "id": "prov-last-audit-001",
-    "target": [{"reference": "Patient/PLAT-B-DEMOSKI-50"}],
-    "recorded": "2026-03-23T12:00:00Z",
-    "agent": [{"who": {"display": "Compliance Auditor B"}}]
+    "data": "SGVsbG8gZnJvbSB0aGUgbmV3IE5leHVzIHN5c3RlbS4="
   }
 ]
